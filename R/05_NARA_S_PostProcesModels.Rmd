@@ -1,0 +1,130 @@
+---
+title: "NARA_S_PostProcesModels"
+author: "Toon Van Daele"
+date: "`r Sys.Date()`"
+output: html_document
+params:
+  modelname: testsel
+  calcvarimp : FALSE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(pander)
+library(RSQLite)
+library(ggplot2)
+source("11_NARA_S_Functions.R")
+options(stringsAsFactors = FALSE)
+modelname <- "allsp" #params$modelname
+calcvarimp <- TRUE #params$calcvarimp
+```
+
+Postprocessing of the results of the model run: **`r modelname`**
+
+Calculation of variable importance: **`r calcvarimp`**
+
+```{r load data}
+pathin <- paste0("../data/data-in/", modelname, "/")
+db <- dbConnect(SQLite(), dbname = paste0(pathin, "speclist.sqlite"))
+speclist <- dbReadTable(db, "speclist")
+dbDisconnect(db)
+
+pathout <- paste0("../data/data-out/", modelname, "/")
+dir.create(pathout, showWarnings = FALSE)
+```
+
+data-in:  `r pathin`
+data-out: `r pathout`
+
+### Evaluation data
+
+```{r evaluationdata, message=FALSE}
+myspecies <- speclist %>%
+  filter(modelrun == "ok") %>%
+  pull(species)
+  
+df_eval <- myspecies %>%
+  map_dfr(., GetEvaluation, modelname)
+
+saveRDS(df_eval, file = paste0(pathout,"df_eval.RDS"))
+```
+
+# Calculate the median ROC and TSS evaluations
+
+```{r calceval}
+df_meval <- df_eval %>%
+  dplyr::group_by(modelname, sp_n, Eval.metric) %>%
+  dplyr::summarise(median = median(Testing.data))
+  
+saveRDS(df_meval, file = paste0(pathout,"df_meval.RDS"))
+```
+
+# median AUC
+
+Dit is een lichte overschatting van de werkelijke AUC.
+Voor een correcte AUC van het ensemble wordt de code nog aangepast.
+
+```{r medianAUC, results='asis'}
+df_meval %>%
+  filter(Eval.metric == "ROC") %>%
+  dplyr::select(-Eval.metric) %>%
+  pandoc.table()
+```
+
+# Overal median AUC
+
+```{r overalmedianAUC, results='asis'}
+df_meval %>%
+  group_by(Eval.metric) %>%
+  summarise(medianScore = median(median)) %>%
+  pandoc.table()
+```
+
+### Create repsonse curves
+
+```{r responscurves, eval=FALSE, include=FALSE}
+pathout <- paste0("../data-out/", modelname, "/responsecurves/")
+dir.create(pathout, showWarnings = FALSE)
+
+orig_wd <- getwd()
+setwd("../data/models")
+
+# Onduidelijk waarom. Maar de responscurve werkt niet via een functie.
+# Heeft te maken met het laden van de modellen en modelnamen
+
+#walk(speclist, CreateResponsePlot, modelname, pathout)
+
+CreateResponsePlot(speclist = myspecies,
+                   modelname = modelname,
+                   pathout = pathout)
+
+setwd(orig_wd)
+```
+
+
+### Retrieve variable importance
+
+```{r vi, results='asis'}
+if (calcvarimp == TRUE) {
+  vi <- map_dfr(speclist$species, GetVariableImportance, modelname)
+  
+  vimean <- vi %>%
+    dplyr::filter(grepl("ROC", EMmodel)) %>%
+    dplyr::group_by(sp_n, Varname) %>%
+    dplyr::summarise(meanvi = mean(vi)) %>%
+    tidyr::spread(key = Varname, value = meanvi) %>%
+    pandoc.table()
+  
+  saveRDS(vi, file = paste0(pathout,"vi.RDS"))
+}
+```
+
+variable importance saved as 'vi.rds'
+
+```{r vimean}
+vi %>%
+  filter(grepl("ROC", EMmodel)) %>%
+  ggplot(aes(x = Varname, y = vi)) + geom_boxplot()
+```
+

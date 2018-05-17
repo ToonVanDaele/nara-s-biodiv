@@ -1,0 +1,92 @@
+---
+title: "NARA_S_Preprocessing"
+author: "Toon Van Daele"
+date: "`r Sys.Date()`"
+output: html_document
+params:
+  modelname
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(RSQLite)
+source("11_NARA_S_Functions.R")
+
+modelname <- "allsp" # params$modelname
+```
+
+```{r load_data}
+df_plant <- readRDS("../data/data-in/df_plant_eda.RDS")
+df_expl <- readRDS("../data/data-in/df_expl_eda.RDS")
+speclist <- readRDS("../data/data-in/speclist_eda.RDS")
+explspec <- readRDS("../data/data-in/explspec_eda.RDS")
+```
+
+## Spread plant data
+
+```{r spreadplantdata}
+df_plant$present <- 1
+df_plant_in <- df_plant %>%
+  filter(Taxoncode %in% speclist) %>%
+  dplyr::select(utmID, Taxoncode, present) %>%
+  spread(key = Taxoncode, value = present) %>%
+  tbl_df()
+```
+
+## Spread explanatory data
+
+```{r spreadexpldata}
+df_expl_in <- df_expl %>%
+  select(-vargroup) %>%
+  filter(scen == "Current" & !varname == "Opp_m2") %>%
+  spread(key = varname, value = value)
+```
+
+## Join explanatory data & plant data
+
+```{r joindata}
+df_data_in <- inner_join(x = df_expl_in,
+                         y = df_plant_in,
+                         by = "utmID")
+```
+
+## Species list
+
+```{r speclist}
+speclist <- data.frame(species = colnames(df_plant_in)[-1],
+                       modelrun = "-")
+
+sp_selection <- c("acer.cam", "chenofic", "epilomon")
+
+speclist <- filter(speclist, species %in% sp_selection)
+
+print(speclist$species)
+```
+
+### Projection data
+
+```{r}
+df_proj_in <- df_expl %>%
+  select(-vargroup) %>%
+  filter(!varname == "Opp_m2") %>%
+  spread(key = varname, value = value)
+```
+
+## Save preprocessed data
+
+```{r saveppdata}
+mypath <- paste0("../data/data-in/", modelname, "/")
+dir.create(mypath, showWarnings = FALSE)
+
+saveRDS(df_data_in, paste0(mypath, "df_data_in.RDS"))
+saveRDS(explspec, paste0(mypath, "explspec.RDS"))
+saveRDS(df_proj_in, paste0(mypath,"df_proj_in.RDS"))
+
+db <- dbConnect(SQLite(), dbname = paste0(mypath, "speclist.sqlite"))
+dbWriteTable(conn = db, name = "speclist", speclist,
+             row.names = FALSE, overwrite = TRUE)
+dbDisconnect(db)
+```
+
+Preprocessed data saved in directory: `r mypath`

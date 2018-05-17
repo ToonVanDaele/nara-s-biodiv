@@ -1,0 +1,230 @@
+---
+title: "EDA_scenarios"
+author: "Toon Van Daele"
+date: "15 mei 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+# Check input files
+
+```{r}
+# Current
+df_cur <- read.csv2(paste0("C:/Users/toon_vandaele/toon.vandaele@inbo.be/",
+                            "Project_WET/NARA/NARA_S/DataIN/expl_var.txt"),
+                     stringsAsFactors = FALSE)
+df_cur$scen <- "Current"
+df_cur <- select(df_cur, -Shape_Length, -Shape_Area)
+
+# KR1
+df_kr1 <- read.csv2(paste0("C:/Users/toon_vandaele/toon.vandaele@inbo.be/",
+                            "Project_WET/NARA/NARA_S/DataIN/",
+                            "hotspotplanten_variabelen_KR1_2050.csv"),
+                     stringsAsFactors = FALSE)
+df_kr1$scen <- "kr1"
+
+# KR2
+df_kr2 <- read.csv2(paste0("C:/Users/toon_vandaele/toon.vandaele@inbo.be/",
+                            "Project_WET/NARA/NARA_S/DataIN/",
+                            "hotspotplanten_variabelen_KR2_2050.csv"),
+                     stringsAsFactors = FALSE)
+df_kr2$scen <- "kr2"
+
+#KR3
+df_kr3 <- read.csv2(paste0("C:/Users/toon_vandaele/toon.vandaele@inbo.be/",
+                            "Project_WET/NARA/NARA_S/DataIN/",
+                            "hotspotplanten_variabelen_KR3_2050.csv"),
+                     stringsAsFactors = FALSE)
+df_kr3$scen <- "kr3"
+
+#KR4
+df_kr4 <- read.csv2(paste0("C:/Users/toon_vandaele/toon.vandaele@inbo.be/",
+                            "Project_WET/NARA/NARA_S/DataIN/",
+                            "hotspotplanten_variabelen_KR4_2050.csv"),
+                     stringsAsFactors = FALSE)
+df_kr4$scen <- "kr4"
+
+### test
+df_cur$kr1_tag <- df_kr1$TAG
+df_cur$kr2_tag <- df_kr2$TAG
+df_cur$kr3_tag <- df_kr3$TAG
+df_cur$kr4_tag <- df_kr4$TAG
+
+df_cur$equal_tagskr1 <- ifelse(df_cur$TAG == df_cur$kr1_tag, 1, 0)
+df_cur$equal_tagskr2 <- ifelse(df_cur$TAG == df_cur$kr2_tag, 1, 0)
+df_cur$equal_tagskr3 <- ifelse(df_cur$TAG == df_cur$kr3_tag, 1, 0)
+df_cur$equal_tagskr4 <- ifelse(df_cur$TAG == df_cur$kr4_tag, 1, 0)
+summary(df_cur)
+
+ggplot(df_cur, aes(x = POINT_X, y = POINT_Y, color = equal_tagskr2)) + geom_point()
+ggplot(df_cur, aes(x = POINT_X, y = POINT_Y, color = equal_tagskr4)) + geom_point()
+
+
+df_test <- left_join(df_cur,
+                     select(df_kr2, TAG, bebouwing),
+                     by = "TAG")
+
+summary(df_test)
+
+df_test$bebouwing_v <- df_test$bebouwing.x - df_test$bebouwing.y
+
+ggplot(df_test, aes(x = POINT_X, y = POINT_Y, color = bebouwing_v)) + geom_point()
+```
+
+The order of the TAGs is not the same for all scenarios.
+For kr1 and kr3, this is the same as for the current scenario.
+For kr2 and kr4, there are some surprising differences in specific zones.
+
+# Check df_expl output from loaddata.R
+
+```{r}
+df_expl <- readRDS("../data/data-in/df_expl.RDS")
+
+df_check <- df_expl %>%
+  filter(varname == "akker") %>%
+  select(-vargroup) %>%
+  spread(key = scen, value = value)
+
+df_check$verschil <- df_check$Current - df_check$kr2
+
+ggplot(df_check, aes(x = X, y = Y, color = verschil)) + geom_point() +
+  coord_fixed()
+
+```
+
+# Check df_expl output from EDA.Rmd
+
+```{r}
+df_expl_eda <- readRDS("../data/data-in/df_expl_eda.RDS")
+
+df_check <- df_expl_eda %>%
+  filter(varname == "akker") %>%
+  select(-vargroup) %>%
+  spread(key = scen, value = value)
+
+df_check$verschil <- df_check$Current - df_check$kr2
+
+ggplot(df_check, aes(x = X, y = Y, color = verschil)) + geom_point() +
+  coord_fixed()
+```
+
+# Check df_proj_in from preprocessing
+
+```{r}
+df_proj_in <- readRDS("../data/data-in/scentest/df_proj_in.RDS")
+
+df_check <- df_proj_in %>%
+  select(utmID, X, Y, scen, akker) %>%
+  spread(key = scen, value = akker)
+
+df_check$verschil <- df_check$Current - df_check$kr2
+
+ggplot(df_check, aes(x = X, y = Y, color = verschil)) + geom_point() +
+  coord_fixed()
+```
+
+# check 
+
+
+
+```{r}
+df_cur <- df_proj_in %>%
+  filter(scen == "Current")
+
+df_kr2 <- df_proj_in %>%
+  filter(scen == "kr1")
+
+colnames(df_cur)
+
+df_v <- df_cur[,5:22] - df_kr2[,5:22]
+df_v <- cbind(df_cur[,1:4], df_v)
+
+summary(df_v)
+
+df_proj_in <- df_v
+
+```
+
+```{r}
+df_proj_in <- df_proj_in %>%
+  filter(X < 100000 & Y < 200000)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = akker)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = bebouwing)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = drainage)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = duinen)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = halfnatgras)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = heide)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = loofbos)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = moeras)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = naaldbos)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = ovlaaggroen)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = potnatzilt)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = potnatzuur)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = prodgrasland)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = recreatie)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = textpc1)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = textpc2)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = textveen)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+
+df_proj_in %>%
+  ggplot(aes(x = X, y = Y, colour = water)) + geom_point() + coord_fixed() +
+  facet_wrap(~scen)
+```
+
+
+

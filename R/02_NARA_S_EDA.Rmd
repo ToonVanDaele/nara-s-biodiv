@@ -1,0 +1,602 @@
+---
+title: "NARA_S_DataExploration"
+author: "Toon Van Daele"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(usdm)
+library(tidyverse)
+library(pander)
+source("11_NARA_S_Functions.R")
+```
+
+```{r load_data}
+df_plant <- readRDS("../data/data-in/df_plant.RDS")
+df_expl <- readRDS("../data/data-in/df_expl.RDS")
+```
+
+# Data exploration of plant data
+
+## Total number of plant species
+
+```{r nb_species}
+nb_spec <- df_plant %>%
+  select(Taxoncode) %>%
+  n_distinct()
+```
+
+'r nb_spec'
+
+## Total number of distinct utmID grids with at least 100 plant species
+
+```{r nb_utmgrids}
+nb_utm <- df_plant %>%
+  select(utmID) %>%
+  n_distinct()
+```
+
+'nb_utm'
+
+## List of species codes and full names
+```{r speccodes}
+species <- df_plant %>% 
+  select(-utmID) %>%
+  distinct()
+head(species)
+```
+
+# Selection of grids with at least 70% of 1x1km
+
+```{r selectutm}
+a <- df_expl %>%
+  filter(scen == "Current" & varname == "Opp_m2") %>%
+  mutate(opp_ok = ifelse(value > 700000, 1, 0))
+
+ggplot(a, aes(x = X, y = Y, colour = factor(opp_ok))) + 
+  geom_point(size = 0.05) + coord_fixed()
+
+utmok <- a %>%
+  filter(opp_ok == 1) %>%
+  pull(utmID)
+
+df_expl <- filter(df_expl, utmID %in% utmok)
+df_plant <- filter(df_plant, utmID %in% utmok)
+```
+
+# Selection of plant species
+
+Species in at least 100 locations and in less than 95% of the locations
+
+```{r selecttaxon}
+speclist <- df_plant %>%
+  group_by(Taxoncode) %>%
+  count() %>%
+  filter(n >= 100 & n <= 0.95 * nb_utm) %>%
+  pull(Taxoncode)
+```
+
+A total of 'r count(speclist)' species.
+
+# Ligging van de goed geobserveerde utm grids (minstens 100 soorten)
+
+```{r joindata}
+df_plant$present <- 1
+spr_plant <- df_plant %>%
+  filter(Taxoncode %in% speclist) %>%
+  select(utmID, Taxoncode, present) %>%
+  spread(key = Taxoncode, value = present) %>%
+  tbl_df()
+
+spr_plant <- inner_join(x = select(a, utmID, X, Y), 
+                        y = spr_plant,
+                        by = "utmID")
+
+ggplot(spr_plant, aes(x = X, y = Y)) + geom_point(size = 1) + coord_fixed()
+```
+
+Deze locaties zijn niet goed ruimtelijke gebalanceerd. Een selectie op basis
+van nearest neighbours met een grts bestand verminderd de sterke concentratie.
+
+```{r balancedlocationsGRTS}
+library(RANN)
+grts <- readRDS("../data/grts_red.RDS")
+
+grts <- grts %>%
+  filter(Ranking < 30000)
+
+closest <- nn2(spr_plant[,c("X", "Y")], grts[,c("x", "y")],
+               k = 1, searchtype = "radius", radius = 50000)
+
+closest <- data.frame(id = closest$nn.idx)
+
+ids <- closest %>%
+  filter(id > 0) %>%
+  distinct() %>%
+  pull()
+
+spr_plant <- spr_plant %>%
+  mutate(rownb = 1:n(),
+  sel = rownb %in% ids)
+
+ggplot(spr_plant, aes(x = X, y = Y, colour = sel)) + 
+  geom_point(size = 1) + coord_fixed()
+  
+spr_plant <- filter(spr_plant, sel == TRUE) %>%
+  select(-sel, -rownb)
+
+df_plant <- filter(df_plant, utmID %in% spr_plant$utmID)
+
+ggplot(spr_plant, aes(x = X, y = Y)) + geom_point(size = 1) + coord_fixed()
+```
+
+# Data exploration of environmental (explanatory) variables
+
+## Land use
+
+```{r lu_summary}
+df_expl %>%
+  filter(vargroup == "lu" & scen == "Current") %>%
+  group_by(varname) %>%
+  select(-X, -Y, -scen, -vargroup) %>%
+  spread(key = varname, value = value, ) %>%
+  summary()
+```
+
+```{r lu_histogram}
+df_expl %>%
+  filter(vargroup == "lu" & scen == "Current") %>%
+  ggplot(aes(x = value)) + geom_histogram() +
+  facet_wrap(~varname, scales = "free_y")
+```
+
+slikschor en duinen komen bijna niet voor
+
+utmID met slikschor > 0:
+```{r slikschor}
+df_expl %>%
+  filter(varname == "slikschor" & scen == "Current" & value > 0) %>% 
+  select(utmID)
+```
+
+Dit is weinig informatief en geeft gegarandeerd problemen bij het modellering.
+Slikschor wordt verwijderd uit de lijst met verklarende variabelen
+
+```{r dropslikschor}
+df_expl <- filter(df_expl, !varname == "slikschor")
+```
+
+```{r duinen}
+nb_duinen <- df_expl %>%
+  filter(scen == "Current" & varname == "duinen" & value > 0) %>%
+  dplyr::n_distinct()
+```
+
+Duinen komt op 'r nb_duinen' locaties voor.
+
+```{r}
+df_expl %>%
+  filter(varname == "moeras" & scen == "Current") %>%
+  ggplot(aes(x = value)) + geom_histogram(bins = 100)
+```
+
+```{r lu_pairs}
+set.seed(5)
+df_expl %>%
+  filter(vargroup == "lu" & scen == "Current") %>%
+  spread(key = varname, value = value) %>%
+  select(-utmID, -X, -Y, -scen, -vargroup) %>%
+  sample_n(200) %>%
+  pairs(pch = 20, cex = 0.7)
+```
+
+```{r lu_cor, results='asis'}
+df_expl %>%
+  filter(vargroup == "lu" & scen == "Current") %>%
+  spread(key = varname, value = value) %>%
+  select(-utmID, -X, -Y, -scen, -vargroup) %>%
+  cor() %>%
+  round(2) %>%
+  pandoc.table()
+```
+
+"Stadsgroen", "Wegen" and "bebouwing" zijn vrij sterk gecorreleerd
+
+```{r selectlu}
+set.seed(5)
+varsel <- c("stadsgroen", "wegen", "bebouwing")
+df_expl %>%
+  filter(varname %in% varsel & scen == "Current") %>%
+  spread(key = varname, value = value) %>%
+  select(-utmID, -X, -Y, -scen, -vargroup) %>%
+  sample_n(500) %>%
+  pairs(pch = 20, cex = 0.7)
+```
+
+We kiezen slechts één, namelijk 'bebouwing'
+
+```{r droplu}
+df_expl <- filter(df_expl, !varname == "stadsgroen" & !varname == "wegen")
+```
+
+## Soil
+
+```{r soil_summary}
+df_expl %>%
+  filter(vargroup == "soil" & scen == "Current") %>%
+  spread(key = varname, value = value, ) %>%
+  select(-utmID, -X, -Y, -scen, -vargroup) %>%
+  summary() %>%
+  pandoc.table()
+```
+
+```{r soil_histogram}
+df_expl %>%
+  filter(vargroup == "soil" & scen == "Current") %>%
+  ggplot(aes(x = value)) + geom_histogram() +
+  facet_wrap(~varname, scales = "free_y")
+```
+
+Textuurmergkrijt zijn bijna allemaal 0
+
+```{r}
+df_expl %>%
+  filter(varname == "textmergkrijt" & scen == "Current") %>%
+  ggplot(aes(x = value)) + geom_histogram()
+
+nb_mergkrijt <- df_expl %>%
+  filter(varname == "textmergkrijt" & scen == "Current" & value > 0) %>%
+  n_distinct()
+```
+
+Slechts 'r nb_mergkrijt' grids met opp > 0
+
+We laten textmergkrijt weg uit de selectie van variabelen
+
+```{r dropmergkrijt}
+df_expl <- filter(df_expl, !varname == "textmergkrijt")
+```
+
+```{r soil_pairs}
+df_expl %>%
+  filter(vargroup == "soil" & scen == "Current") %>%
+  spread(key = varname, value = value) %>%
+  select(-utmID, -X, -Y, -vargroup, -scen) %>%
+  sample_n(500) %>%
+  pairs()
+```
+
+Zand, leem en klei sommeren tot 100%. De textuur wijzigt niet bij een
+veranderend landgebruik. We kunnen daaarom de twee principale componenten
+van de textuurvariabelen 'zand', 'leem' en 'klei' nemen.
+De variabele 'textveen' wordt apart behouden.
+
+```{r PCAcond}
+soiltext <- c("textzand", "textleem", "textklei")
+df_text <- df_expl %>%
+  filter(varname %in% soiltext & scen == "Current") %>%
+  spread(key = varname, value = value)
+
+pctext <- prcomp(df_text[,soiltext], center = TRUE, scale. = TRUE)
+summary(pctext)
+```
+
+We voegen de PCA loads voor PC1 and PC2 toe aan df_expl
+Deze procedure gaat ervan uit dat de texttuur voor elk scenario hetzelfde is!
+
+```{r PCAloads}
+pcloads <- pctext$x %>%
+  as.data.frame() %>%
+  bind_cols(df_text) %>%
+  rename(textpc1 = PC1, textpc2 = PC2) %>%
+  select(-one_of(soiltext), -PC3, -scen) %>%
+  gather(key = varname, value = value, -utmID, -X, -Y, -vargroup)
+
+scens <- data.frame(scen = unique(df_expl$scen), stringsAsFactors = FALSE)
+pcloads <- merge(pcloads, scens)
+  
+df_expl <- bind_rows(df_expl, pcloads)
+
+df_expl %>%
+  filter(vargroup == "soil" & scen == "Current" & !varname == "textveen") %>%
+  spread(key = varname, value = value) %>%
+  select(-utmID, -X, -Y, -vargroup, -scen) %>%
+  sample_n(500) %>%
+  pairs()
+
+df_expl <- filter(df_expl, !varname %in% c("textleem", "textklei", "textzand"))
+```
+
+(Deze benadering zou vervangen kunnen worden door een variabele 'bulk density'
+of iets dergelijks.)
+
+## Site conditions
+
+```{r condvarsummary, results='asis'}
+df_expl %>%
+  filter(vargroup == "cond" & scen == "Current") %>%
+  spread(key = varname, value = value) %>%
+  select(-utmID, -X, -Y, -scen, -vargroup) %>%
+  summary() %>%
+  pandoc.table()
+```
+
+Er zijn NA's voor potnatzuur en potnattrofie. Waar zijn die gelegen?
+
+```{r potnatzuur}
+df_expl %>%
+  filter(varname == "potnatzuur" & scen == "Current" & is.na(value)) %>%
+  ggplot(aes(x = X, y = Y, colour = value)) + geom_point(size = 0.1) +
+  coord_fixed()
+```
+
+Dit is in de haven van Zeebrugge. Deze utm locaties worden verwijderd uit
+de analyse.
+
+```{r droputmNA}
+utmNA <- df_expl %>%
+  filter(varname == "potnatzuur" & scen == "Current" & is.na(value)) %>%
+  distinct(utmID) %>%
+  pull(utmID)
+df_expl <- filter(df_expl, !utmID %in% utmNA)
+```
+
+```{r condvarhist}
+df_expl %>%
+  filter(vargroup == "cond" & scen == "Current") %>%
+  ggplot(aes(x = value)) + geom_histogram() +
+  facet_wrap(~varname, scales = "free")
+```
+
+potnatzilt komt niet zoveel voor. Opp bijna overal = 0
+
+```{r}
+df_expl %>%
+  filter(varname == "potnatzilt" & scen == "Current") %>%
+  ggplot(aes(x = X, y = Y, colour = value)) + geom_point(size = 1) +
+  coord_fixed()
+```
+
+Allicht voor bepaalde plantensoorten erg bepalend. Toch maar behouden.
+
+```{r condvarpairs}
+df_expl %>%
+  filter(vargroup == "cond" & scen == "Current") %>%
+  spread(key = varname, value = value) %>%
+  select(-utmID, -X, -Y, -vargroup, -scen) %>%
+  sample_n(500) %>%
+  pairs()
+```
+
+```{r condvarcorr, results='asis'}
+df_expl %>%
+  filter(vargroup == "cond" & scen == "Current") %>%
+  spread(key = varname, value = value) %>%
+  select(-utmID, -X, -Y, -vargroup, -scen) %>%
+  cor() %>%
+  round(2) %>%
+  pandoc.table()
+```
+
+Een vrij sterke relatie tussen zuurgraad en trofie.
+
+Drainage heeft een merkwaardige knik in de verdeling.
+Er zijn zeer weinig waarden tussen 1 en 2 en dan plots heel veel bij 2.
+Nog uit te zoeken hoe dit komt.
+
+```{r histodrainage}
+df_expl %>%
+  filter(varname == "drainage" & scen == "Current") %>%
+  ggplot(aes(x = value)) + geom_histogram(bins = 100)
+```
+
+```{r plotdrainage}
+df_expl %>%
+  filter(varname == "drainage" & scen == "Current") %>%
+  filter(value > 1 & value < 2.2) %>%
+  ggplot(aes(x = X, y = Y, colour = value)) + geom_point(size = 0.2) +
+  ggtitle("drainage < 2.2")
+```
+
+# Selectie van de verklarende variabelen
+
+We onderscheiden verder twee groepen.
+* Variabelen die wijzigen bij gewijzigd landgebruik -> alle landgebruiksklassen
+* Variabelen die (bijna) niet wijzigen bij gewijzigd landgebruik ->
+textuurvariabelen (twee principale componenten), textveen en potnatzuur
+
+We gaan ervan ui dat de standplaatsvariabelen 'potnattrofie' en 'drainage'
+gebonden zijn aan het landgebruik. Voor drainage lijkt dit op het eerste
+zicht niet onmiddellijk het geval. We behouden drainage en beschouwen die
+constant over de verschillende scenarios. Potnattrofie
+wordt niet verder gebruikt in de analyse.
+
+```{r trofieenlandgebruik}
+df_expl %>%
+  select(-vargroup) %>%
+  filter(scen == "Current") %>%
+  filter(varname %in% c("heide", "loofbos", "akker", "potnattrofie")) %>%
+  spread(key = varname, value = value) %>%
+  select(-utmID, -X, -Y, -scen) %>%
+  sample_n(500) %>%
+  pairs()
+```
+
+```{r drainagelandgebruik}
+df_expl %>%
+  select(-vargroup) %>%
+  filter(scen == "Current") %>%
+  filter(varname %in% c("heide", "loofbos", "akker", "drainage")) %>%
+  spread(key = varname, value = value) %>%
+  select(-utmID, -X, -Y, -scen) %>%
+  sample_n(500) %>%
+  pairs()
+```
+
+```{r droppotnattrofie}
+df_expl <-  filter(df_expl, !varname == "potnattrofie")
+```
+
+# Selectie van de (mogelijk) relevante verklarende variabelen per soort
+
+- Maximaal aantal variabelen = min(presences & absences) / 10
+- Minstens 20% van waarden > 0 (voor landgebruiksklassen)
+- VIF <- 5
+
+Aantal variabelen per species
+
+```{r selectvars}
+g <- map_dfr(colnames(spr_plant[-c(1:3)]), getexplvar,
+             spr_plant = spr_plant,
+             df_expl = df_expl)
+
+g %>%
+  group_by(varname) %>%
+  count() %>%
+  pandoc.table()
+
+# Filter op basis minstens 5 % hokken met waarde > 0 en 
+#minimaal 5 distincte waarden
+
+explvar1 <- g %>%
+ filter(distinct > 5)
+#filter(count / nbhokken > 0.05 & distinct > 1)
+
+explvar1 %>%
+  group_by(varname) %>%
+  count() %>%
+  pandoc.table()
+```
+
+# Verdere selectie op basis van VIF
+
+```{r VIF}
+speclist <- unique(explvar1$sp_n)
+
+dfVIF <- map_dfr(speclist, VIFselect, explvar1, spr_plant, df_expl)
+
+dfVIF %>%
+  group_by(varname) %>%
+  summarize(meanVIF = mean(VIF),
+            medianVIF = median(VIF),
+            maxVIF = max(VIF),
+            minVIF = min(VIF))
+```
+
+
+```{r selectvar, results='asis'}
+explspec <- inner_join(x = explvar1,
+                      y = dfVIF,
+                      by = c('sp_n', 'varname'))
+
+explspec %>%
+  group_by(sp_n) %>%
+  summarise(maxnbvar = first(maxnbvar),
+            nbvars = n()) %>%
+  mutate(ok = ifelse(maxnbvar < nbvars, "TRUE", "FALSE"))
+
+dfVIF %>%
+  group_by(sp_n) %>%
+  count() %>%
+  ungroup %>%
+  summarise(min = min(n),
+            median = median(n),
+            max = max(n)) %>%
+  pandoc.table()
+```
+
+Meest gekozen variabelen
+
+```{r varlist, results='asis'}
+dfVIF %>%
+  group_by(varname) %>%
+  count() %>%
+  pandoc.table()
+```
+
+# Normalize explanatory variables
+
+! expl var for new scenarios require the same scale parameters
+
+Geen normalisatie meer.
+
+```{r}
+#df_expl_sc <- df_expl %>%
+#  select(explvarlist) %>%
+#  mutate_all(.funs = scale)
+#remove attributes  
+#df_expl_sc <- as.data.frame(lapply(df_expl_sc, FUN = as.vector))  
+#df_expl_sc <- bind_cols(df_expl %>%
+#            select(utmID, X, Y, scen),
+#            df_expl_sc)
+```
+
+# Future scenarios - 'kijkrichtingen'
+
+```{r future scen, results='asis'}
+df_sum <- df_expl %>%
+  group_by(scen, varname) %>%
+  summarise(sum = sum(value)) %>%
+  spread(key = varname, value = sum) %>%
+  t %>%
+  pandoc.table()
+```
+
+# Overal species richness based on presence data
+
+```{r}
+speccode <- df_plant %>%
+  select(Taxoncode, NaamNederlands) %>%
+  distinct()
+ 
+dftemp <- spr_plant
+dftemp[is.na(dftemp)] <- 0
+pdata <- dftemp %>%
+     select(utmID, X, Y, speclist) %>%
+    gather(key = sp_n, value = bins, -utmID, -X, -Y) %>%
+    left_join(speccode, by = c("sp_n" = "Taxoncode")) %>%
+    group_by(utmID) %>%
+    summarise(specrich = sum(bins)) %>%
+  left_join(dftemp %>%
+              select(utmID, X, Y),
+            by = "utmID")
+
+(p <- ggplot(pdata, aes(x = X, y = Y)) + 
+  geom_point(aes(colour = specrich), size = 1) +
+  scale_colour_gradientn(colours = rainbow(3)) +
+  coord_fixed())
+
+ggsave("../data/data-in/specrich.png", p, dpi = 150)
+```
+
+## Save plots with calibration data (presences only)
+
+```{r species_plot}
+mypath = "../data/data-in/presences/"
+dir.create(mypath, showWarnings = FALSE)
+
+speccode <- df_plant %>%
+  select(Taxoncode, NaamNederlands) %>%
+  distinct()
+ 
+dftemp <- spr_plant
+dftemp[is.na(dftemp)] <- 0
+dftemp %>%
+     select(utmID, X, Y, speclist) %>%
+    gather(key = sp_n, value = bins, -utmID, -X, -Y) %>%
+    left_join(speccode, by = c("sp_n" = "Taxoncode")) %>%
+    split(.$sp_n) %>%
+    map(.,plotBinaries, mypath, c("sp_n", "NaamNederlands"))
+```
+
+plots with presence data saved in 'r mypath'
+
+```{r savedata}
+saveRDS(speclist, "../data/data-in/speclist_eda.RDS")
+saveRDS(explspec, "../data/data-in/explspec_eda.RDS")
+saveRDS(df_expl, "../data/data-in/df_expl_eda.RDS")
+saveRDS(df_plant, "../data/data-in/df_plant_eda.RDS")
+```
+

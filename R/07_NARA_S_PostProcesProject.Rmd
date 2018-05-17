@@ -1,0 +1,93 @@
+---
+title: "07_NARA_S_PostProcesProject"
+author: "Toon Van Daele"
+date: "`r Sys.Date()`s"
+output: html_document
+params:
+  modelname: test
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(pander)
+library(RSQLite)
+source("11_NARA_S_Functions.R")
+modelname <- "allsp" #params$modelname
+pathin <- paste0("../data/data-in/", modelname, "/")
+pathout <- paste0("../data/data-out/", modelname, "/")
+```
+
+Postprocessing of the projections of model: **`r modelname`**
+
+```{r loaddata}
+df_proj_in <- readRDS(paste0(pathin, "df_proj_in.RDS"))
+db <- dbConnect(SQLite(), dbname = paste0(pathin, "speclist.sqlite"))
+speclist <- dbReadTable(db, "speclist")
+dbDisconnect(db)
+```
+
+## Probabilities from biomod projections
+
+```{r}
+projs <- expand.grid(sp_n = speclist$species,
+                     scen = unique(df_proj_in$scen),
+                     stringsAsFactors = FALSE)
+projs$projname <- paste0(modelname, "_", projs$scen)
+
+df_probs <- pmap_dfr(projs, GetProbs, df_proj_in)
+
+saveRDS(df_probs, file = paste0(pathout,"df_probs.RDS"))
+```
+
+# Sum of probabilities and bins
+
+```{r}
+df_sums <- df_probs %>%
+  dplyr::group_by(utmID, projname) %>%
+  dplyr::summarise(probsum = sum(probs) / 1000,
+                   binsum  = sum(bins))
+
+df_idxy <- df_proj_in %>%
+  filter(scen == "Current") %>%
+  select(utmID, X, Y)
+
+df_sums <- left_join(df_sums, df_idxy, by = "utmID")
+
+sumplots <- df_sums %>%
+  split(.$projname) %>%
+  map(., plotsum, pathout)
+
+saveRDS(df_sums, file = paste0(pathout, "df_sums.RDS"))
+```
+
+## Individual plots for each species (Current scenario only)
+
+```{r}
+mypath <- paste0(pathout,"proj_bin/")
+dir.create(mypath, showWarnings = FALSE)
+
+scens <- unique(df_probs$projname)
+
+for (scen in scens){
+  plots <- df_probs %>%
+    filter(projname == scen) %>%
+    left_join(df_idxy, by = "utmID") %>%
+    split(.$sp_n) %>%
+    map(.,plotBinaries, mypath, c("projname", "sp_n"))
+}
+```
+
+```{r}
+mypath <- paste0(pathout,"proj_prob/")
+dir.create(mypath, showWarnings = FALSE)
+
+for (scen in scens){
+  plots <- df_probs %>%
+    filter(projname == scen) %>%
+    left_join(df_idxy, by = "utmID") %>%
+    mutate(probs = probs / 1000) %>%
+    split(.$sp_n) %>%
+    map(.,plotContinuous, mypath, c("projname", "sp_n"), c(0,1))
+}
+```
