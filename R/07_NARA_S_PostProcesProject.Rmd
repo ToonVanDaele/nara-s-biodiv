@@ -35,9 +35,9 @@ projs <- expand.grid(sp_n = speclist$species,
                      stringsAsFactors = FALSE)
 projs$projname <- paste0(modelname, "_", projs$scen)
 
-df_probs <- pmap_dfr(projs, GetProbs, df_proj_in)
+df_probs <- pmap_dfr(projs, getprobs, df_proj_in)
 
-saveRDS(df_probs, file = paste0(pathout,"df_probs.RDS"))
+saveRDS(df_probs, file = paste0(pathout, "df_probs.RDS"))
 ```
 
 # Sum of probabilities and bins
@@ -64,7 +64,7 @@ saveRDS(df_sums, file = paste0(pathout, "df_sums.RDS"))
 ## Individual plots for each species (Current scenario only)
 
 ```{r}
-mypath <- paste0(pathout,"proj_bin/")
+mypath <- paste0(pathout, "proj_bin/")
 dir.create(mypath, showWarnings = FALSE)
 
 scens <- unique(df_probs$projname)
@@ -74,12 +74,12 @@ for (scen in scens){
     filter(projname == scen) %>%
     left_join(df_idxy, by = "utmID") %>%
     split(.$sp_n) %>%
-    map(.,plotBinaries, mypath, c("projname", "sp_n"))
+    map(., plotbinaries, mypath, c("projname", "sp_n"))
 }
 ```
 
 ```{r}
-mypath <- paste0(pathout,"proj_prob/")
+mypath <- paste0(pathout, "proj_prob/")
 dir.create(mypath, showWarnings = FALSE)
 
 for (scen in scens){
@@ -88,6 +88,6 @@ for (scen in scens){
     left_join(df_idxy, by = "utmID") %>%
     mutate(probs = probs / 1000) %>%
     split(.$sp_n) %>%
-    map(.,plotContinuous, mypath, c("projname", "sp_n"), c(0,1))
+    map(., plotcontinuous, mypath, c("projname", "sp_n"), c(0, 1))
 }
 ```

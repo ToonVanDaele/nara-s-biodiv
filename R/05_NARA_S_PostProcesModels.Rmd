@@ -45,9 +45,9 @@ myspecies <- speclist %>%
   pull(species)
   
 df_eval <- myspecies %>%
-  map_dfr(., GetEvaluation, modelname)
+  map_dfr(., getevaluation, modelname)
 
-saveRDS(df_eval, file = paste0(pathout,"df_eval.RDS"))
+saveRDS(df_eval, file = paste0(pathout, "df_eval.RDS"))
 ```
 
 # Calculate the median ROC and TSS evaluations
@@ -57,7 +57,7 @@ df_meval <- df_eval %>%
   dplyr::group_by(modelname, sp_n, Eval.metric) %>%
   dplyr::summarise(median = median(Testing.data))
   
-saveRDS(df_meval, file = paste0(pathout,"df_meval.RDS"))
+saveRDS(df_meval, file = paste0(pathout, "df_meval.RDS"))
 ```
 
 # median AUC
@@ -92,10 +92,10 @@ setwd("../data/models")
 
 # Onduidelijk waarom. Maar de responscurve werkt niet via een functie.
 # Heeft te maken met het laden van de modellen en modelnamen
+# De code zou volgende lijn moeten bevatten:
+# Toe te voegen: walk(speclist, CreateResponsePlot, modelname, pathout)
 
-#walk(speclist, CreateResponsePlot, modelname, pathout)
-
-CreateResponsePlot(speclist = myspecies,
+create_responseplot(speclist = myspecies,
                    modelname = modelname,
                    pathout = pathout)
 
@@ -107,16 +107,16 @@ setwd(orig_wd)
 
 ```{r vi, results='asis'}
 if (calcvarimp == TRUE) {
-  vi <- map_dfr(speclist$species, GetVariableImportance, modelname)
-  
+  vi <- map_dfr(speclist$species, get_variable_importance, modelname)
+
   vimean <- vi %>%
     dplyr::filter(grepl("ROC", EMmodel)) %>%
     dplyr::group_by(sp_n, Varname) %>%
     dplyr::summarise(meanvi = mean(vi)) %>%
     tidyr::spread(key = Varname, value = meanvi) %>%
     pandoc.table()
-  
-  saveRDS(vi, file = paste0(pathout,"vi.RDS"))
+
+  saveRDS(vi, file = paste0(pathout, "vi.RDS"))
 }
 ```
 

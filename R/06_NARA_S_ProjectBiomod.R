@@ -13,8 +13,8 @@ library(RSQLite)
 source("11_NARA_S_Functions.R")
 source("12_NARA_S_Runbiomod.R")
 
-modeldir = "../data/models"
-modelname = "allsp"
+modeldir <- "../data/models"
+modelname <- "allsp"
 
 cat("Start - ", date(), "\n",
     "model directory: ", modeldir, "\n",
@@ -58,10 +58,10 @@ pwalk(.l = projs, .f = function(proj, sp.n, modelname){
 
   sink("Out_proj.txt", append = TRUE)
 
-  project.return <- BiomodProjection(sp.n = sp.n,
+  project.return <- biomod_projection(sp.n = sp.n,
                                  model.name = modelname,
-                                 my.proj = projdata[,explvar],
-                                 my.proj.xy = projdata[,c("X", "Y")],
+                                 my.proj = projdata[, explvar],
+                                 my.proj.xy = projdata[, c("X", "Y")],
                                  proj.name = paste0(modelname, "_", proj))
   sink()
 

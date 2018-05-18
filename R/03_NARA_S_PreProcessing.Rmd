@@ -81,7 +81,7 @@ dir.create(mypath, showWarnings = FALSE)
 
 saveRDS(df_data_in, paste0(mypath, "df_data_in.RDS"))
 saveRDS(explspec, paste0(mypath, "explspec.RDS"))
-saveRDS(df_proj_in, paste0(mypath,"df_proj_in.RDS"))
+saveRDS(df_proj_in, paste0(mypath, "df_proj_in.RDS"))
 
 db <- dbConnect(SQLite(), dbname = paste0(mypath, "speclist.sqlite"))
 dbWriteTable(conn = db, name = "speclist", speclist,

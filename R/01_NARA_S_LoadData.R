@@ -106,10 +106,10 @@ df_kr1$wegen <- df_kr2$wegen <- df_kr3$wegen <- df_kr4$wegen <- NA
 
 # Complete kr1 to kr4 with soil and cond data
 varsel <- c("TAG", "POINT_X", "POINT_Y", "Opp_m2", soilvar, condvar)
-df_kr1 <- left_join(df_kr1, df_cur[,varsel], by = "TAG")
-df_kr2 <- left_join(df_kr2, df_cur[,varsel], by = "TAG")
-df_kr3 <- left_join(df_kr3, df_cur[,varsel], by = "TAG")
-df_kr4 <- left_join(df_kr4, df_cur[,varsel], by = "TAG")
+df_kr1 <- left_join(df_kr1, df_cur[, varsel], by = "TAG")
+df_kr2 <- left_join(df_kr2, df_cur[, varsel], by = "TAG")
+df_kr3 <- left_join(df_kr3, df_cur[, varsel], by = "TAG")
+df_kr4 <- left_join(df_kr4, df_cur[, varsel], by = "TAG")
 
 df_expl <- bind_rows(df_cur, df_kr1, df_kr2, df_kr3, df_kr4)
 
@@ -117,7 +117,7 @@ df_expl <- bind_rows(df_cur, df_kr1, df_kr2, df_kr3, df_kr4)
 df_expl <- select(df_expl, -OBJECTID)
 
 # Change some column names
-colnames(df_expl)[c(1,3,4)] <- c("utmID", "X", "Y")
+colnames(df_expl)[c(1, 3, 4)] <- c("utmID", "X", "Y")
 
 # NA -> 0 voor bijna alle variabelen, behalve zuurgraad, trofie,
 c0 <- c("bebouwing", "wegen", "recreatie", "stadsgroen", "akker",
@@ -125,7 +125,7 @@ c0 <- c("bebouwing", "wegen", "recreatie", "stadsgroen", "akker",
         "duinen", "slikschor", "ovlaaggroen", "water", "textzand", "textleem",
         "textklei", "textveen", "textmergkrijt", "drainage", "potnatzilt")
 
-df_expl[,c0][is.na(df_expl[,c0])] <- 0
+df_expl[, c0][is.na(df_expl[, c0])] <- 0
 
 #m2 geeft te grote getallen, wat numerieke problemen geeft bij het
 #modelleren. Omzetting naar km2
@@ -133,7 +133,7 @@ ckm <- c("bebouwing", "wegen", "recreatie", "stadsgroen", "akker",
         "prodgrasland", "heide", "loofbos", "naaldbos", "halfnatgras", "moeras",
         "duinen", "slikschor", "ovlaaggroen", "water", "potnatzilt")
 
-df_expl[,ckm] <- df_expl[,ckm] / 1000000
+df_expl[, ckm] <- df_expl[, ckm] / 1000000
 
 # Gather data to long format
 df_expl <- df_expl %>%
@@ -141,9 +141,8 @@ df_expl <- df_expl %>%
 
 df_expl <- left_join(df_expl,
                       df_vargroup,
-                      by = 'varname')
+                      by = "varname")
 
 # Save results as binary files
 saveRDS(df_plant, "../data/data-in/df_plant.RDS")
 saveRDS(df_expl, "../data/data-in/df_expl.RDS")
-

@@ -6,22 +6,22 @@
 #' Retrieves the probabilities and binary output
 #'
 #------------------------------------------------------------------------
-GetProbs <- function(sp_n, scenario, projname, df_proj_in){
+getprobs <- function(sp_n, scenario, projname, df_proj_in){
 
   # load ensemble mean probability projection
   file.name <- paste0("../data/models/", sp_n, "/proj_", projname, "/proj_",
-                     projname, "_", sp_n, "_ensemble.RData")
+                      projname, "_", sp_n, "_ensemble.RData")
 
-  proj.prob <- loadRData(file.name)
+  proj.prob <- loadrdata(file.name)
 
-  probs <- as.vector(proj.prob[,1]) # Get the mean ensemble probability
+  probs <- as.vector(proj.prob[, 1]) # Get the mean ensemble probability
   remove(proj.prob)
 
   #load ensemble binary projection
   file.name <- paste0("../data/models/", sp_n, "/proj_", projname, "/proj_",
-                     projname, "_", sp_n, "_ensemble_ROCbin.RData")
+                      projname, "_", sp_n, "_ensemble_ROCbin.RData")
 
-  proj.bin <- loadRData(file.name)
+  proj.bin <- loadrdata(file.name)
   bins <- as.vector(proj.bin) # Get the mean binary output of the ensemble
   remove(proj.bin)
 
@@ -42,14 +42,15 @@ GetProbs <- function(sp_n, scenario, projname, df_proj_in){
 #'@param modelname name of the model
 #'@return data frame with evaluation data
 #------------------------------------------------------------------------
-GetEvaluation <- function(sp_n, modelname) {
+getevaluation <- function(sp_n, modelname) {
 
   require(biomod2)
 
-    filename <- paste0("../data/models/", sp_n, "/", sp_n, ".", modelname, ".models.out")
+    filename <- paste0("../data/models/", sp_n, "/", sp_n, ".", modelname,
+                       ".models.out")
   temp <- load(filename)
   mymodel <- get(temp)
-  rm(list = c(temp, 'temp'))
+  rm(list = c(temp, "temp"))
 
   df <- get_evaluations(mymodel, as.data.frame = TRUE)
   df$sp_n <- sp_n
@@ -58,13 +59,13 @@ GetEvaluation <- function(sp_n, modelname) {
   return(df)
 }
 
-#----------------------------------------------------------------------------------------
+#-----------------------------------------------------------------
 #' Load an RData file and return
 #'
 #' Loads .Rdata file
 #' @param fileName file name
-#----------------------------------------------------------------------------------------
-loadRData <- function(fileName){
+#-----------------------------------------------------------------
+loadrdata <- function(fileName){
 
   load(fileName)
   get(ls()[ls() != "fileName"])
@@ -78,10 +79,10 @@ loadRData <- function(fileName){
 # '@param titlecols column names from df to be used in the title
 # '@param vlimits force limits c(min, max)
 #------------------------------------------------------------------
-plotContinuous <- function(df, path, titlecols, vlimits) {
+plotcontinuous <- function(df, path, titlecols, vlimits) {
 
   require(ggplot2)
-  title <- df[1,titlecols] %>%
+  title <- df[1, titlecols] %>%
     unite(new, titlecols, sep = "_") %>%
     pull()
 
@@ -101,11 +102,11 @@ plotContinuous <- function(df, path, titlecols, vlimits) {
 # '@param path path for saving
 # '@param titlecols column names from df to be used in the title
 #------------------------------------------------------------------
-plotBinaries <- function(df, path, titlecols) {
+plotbinaries <- function(df, path, titlecols) {
 
   require(ggplot2)
   mycolors <- c("grey", "red")
-  title <- df[1,titlecols] %>%
+  title <- df[1, titlecols] %>%
     unite(new, titlecols, sep = "_") %>%
     pull()
 
@@ -123,7 +124,7 @@ plotBinaries <- function(df, path, titlecols) {
 
 plotsum <- function(df, pathout) {
 
-  title <- df[1,"projname"]
+  title <- df[1, "projname"]
 
     (p <- ggplot(df, aes(x = X, y = Y)) +
        geom_point(aes(colour = probsum), size = 1) +
@@ -151,14 +152,14 @@ plotsum <- function(df, pathout) {
 #' @param model_name model name
 #' @return a data frame
 #----------------------------------------------------------------------------
-GetVariableImportance <- function(sp_n, modelname){
+get_variable_importance <- function(sp_n, modelname){
 
   orig_wd <- getwd()
   setwd("../data/models")
 
   filename <- paste0(sp_n, "/", sp_n, ".", modelname, "ensemble.models.out")
 
-  myEM <- loadRData(filename)
+  myEM <- loadrdata(filename)
   myEMvi <- get_variables_importance(myEM)
 
   myEMvi <- plyr::adply(myEMvi, 1:3)
@@ -181,34 +182,34 @@ GetVariableImportance <- function(sp_n, modelname){
 #' @param model_name model name
 #' @return a data frame
 #----------------------------------------------------------------------------
-CreateResponsePlot <- function(sp_n, modelname, pathout){
+create_responseplot <- function(sp_n, modelname, pathout){
 
   filenameEM <- paste0(sp_n, "/", sp_n, ".", modelname, "ensemble.models.out")
 
-  myEM <- loadRData(filenameEM)
+  myEM <- loadrdata(filenameEM)
   myEMmodels <- BIOMOD_LoadModels(myEM)
 
   filename <- paste0(sp_n, "/", sp_n, ".", modelname, ".models.out")
-  mymod <- loadRData(filename)
+  mymod <- loadrdata(filename)
   mymodels <- BIOMOD_LoadModels(mymod)
 
-  print(head(get_formal_data(mymod, 'expl.var')))
+  print(head(get_formal_data(mymod, "expl.var")))
 
   Plot2D <- response.plot2(models = myEMmodels,
-                          Data = get_formal_data(mymod, 'expl.var'),
+                          Data = get_formal_data(mymod, "expl.var"),
                           show.variables = get_formal_data(mymod,
-                                   'expl.var.names'),
+                                   "expl.var.names"),
                           do.bivariate = FALSE,
-                            fixed.var.metric = 'median',
+                            fixed.var.metric = "median",
                           plot = TRUE,
-                          data_species = get_formal_data(mymod,'resp.var'))
+                          data_species = get_formal_data(mymod, "resp.var"))
 }
 
 #--------------------------------
 # Select by VIF value
 #--------------------------------
 
-VIFselect <- function(species, explvar, spr_plant, df_expl) {
+vif_select <- function(species, explvar, spr_plant, df_expl) {
   varnames <- explvar %>%
     filter(sp_n == species) %>%
     pull(varname)
@@ -244,11 +245,13 @@ getexplvar <- function(sp_n, spr_plant, df_expl) {
     pull(utmID)
 
   # maximaal aantal variabelen (voldoende presences als absences vereist)
-  maxnbvar <- trunc(min(length(sphokken), nrow(spr_plant) - length(sphokken)) / 15)
+  maxnbvar <- trunc(min(length(sphokken),
+                        nrow(spr_plant) - length(sphokken)) / 15)
 
   # aantal hokken met waarde > 0
   temp <- df_expl %>%
-    filter(utmID %in% sphokken & !varname == "Opp_m2" & scen == "Current" & !value == 0) %>%
+    filter(utmID %in% sphokken & !varname == "Opp_m2" & scen == "Current" &
+             !value == 0) %>%
     group_by(varname) %>%
     summarise(count = n(),
               distinct = n_distinct(value))
@@ -261,107 +264,13 @@ getexplvar <- function(sp_n, spr_plant, df_expl) {
 # Create GAM formula
 #------------------------------------------------------------
 
-GAMformula <- function(spname, varnames) {
+gam_formula <- function(spname, varnames) {
 
   varcs <- paste0("s(", varnames, ", k = 3, bs='cs')")
 
   fromstr <- paste0(spname, " ~ 1 +",
                     paste(varcs, collapse = " + "))
 
-  #fromstr <- paste0(spname, " ~ 1 +",
-  #                  paste(varcs, collapse = " + "), " + s(X, Y, k = 4, bs='tp')")
-
   form <- formula(fromstr)
   return(form)
 }
-
-
-#----------------------------------------------------------------------------
-# Get quantile value
-#----------------------------------------------------------------------------
-
-# getquant <- function(sp_n, explquant, prob, df) {
-#
-#   varlist <- explquant$varname
-#
-#   spvar <-  df %>%
-#     filter(!is.na(get(sp_n))) %>%
-#     summarise_at(.vars = varlist,
-#                  .funs = quantile, probs = prob) %>%
-#     t
-#
-#   spvar <- data.frame(sp_n = sp_n,
-#                       varname = rownames(spvar),
-#                       pquant = as.vector(spvar),
-#                       stringsAsFactors = FALSE)
-#
-#   spvar <- left_join(spvar, explquant, by = "varname")
-#
-# }
-
-
-# #-----------------------------------
-# # Get variables with only one value
-# #-----------------------------------
-#
-# getnonzerorange <- function(vifdata) {
-#
-#   pit <-  dplyr::select(vifdata, -resp)
-#
-#   myzerorange <- NULL
-#   for (mycol in colnames(pit)) {
-#
-#     #myrange <- range(pit[,mycol])
-#     myquantile <- quantile(pit[[mycol]], c(0.01, 0.99))
-#     if (myquantile[2] - myquantile[1] > 0) {
-#       myzerorange <- c(myzerorange, mycol)
-#     }
-#   }
-#   return(myzerorange)
-# }
-#
-
-
-
-#---------------------------------------
-# fit gam for testing
-#----------------------------------------
-# myformula <- "resp ~ "
-#   for (explvar in nonzeroranges) {
-#
-#     myformula <- paste0(myformula, "s(", explvar, ", k = 3) + ")
-#   }
-#
-#   myformula <- stringr::str_sub(myformula, 1, nchar(myformula) - 2)
-#
-#   #fit <- glm(resp ~ . , family = binomial(logit), data = vifdata)
-#   summary(fit)
-#
-#   fitgam <- mgcv::gam(formula = as.formula(myformula),
-#                    family = binomial(link = logit),
-#                    data = vifdata)
-#
-#   summary(fitgam)
-
-
-#--------------------------------
-# Set random pseudo absences
-#--------------------------------
-
-# rspeudo <- function(myvec) {
-#
-#   len <- length(myvec)
-#   nb_pr <- sum(myvec,na.rm = TRUE)
-#
-#   myprob <- myvec - 1
-#   myprob[is.na(myprob)] <- 1
-#
-#   nb_abs <- ifelse(nb_pr < len - nb_pr, nb_pr, len - nb_pr)
-#
-#   myabs <- sample(x = 1:length(myvec), size = nb_abs,
-#                   replace = FALSE, prob = myprob)
-#
-#   myvec[myabs] <- 0
-#   return(myvec)
-# }
-#

@@ -44,7 +44,9 @@ my.spec <- speclist %>%
   dplyr::select("species") %>%
   pull()
 
-if (length(my.spec) == 0) {print("No models to run - check modelname")}
+if (length(my.spec) == 0) {
+  print("No models to run - check modelname")
+  }
 
 setwd(modeldir)
 
@@ -52,7 +54,7 @@ walk2(.x = my.spec, .y = modelname, .f = function(sp.n, modelname){
 
   cat(modelname, " - ", sp.n, "\n")
 
-  my.resp <- df_data_in[,sp.n]
+  my.resp <- df_data_in[, sp.n]
   explvar <- explspec %>%
     filter(sp_n == sp.n) %>%
     dplyr::select(varname) %>%
@@ -60,11 +62,11 @@ walk2(.x = my.spec, .y = modelname, .f = function(sp.n, modelname){
     intersect(colnames(df_data_in))
 
   sink("Out.txt", append = TRUE)
-  model.return <- BiomodModeling(sp.n = sp.n,
+  model.return <- Biomod_modeling(sp.n = sp.n,
                                  model.name = modelname,
                                  my.resp = my.resp,
-                                 my.expl = df_data_in[,explvar],
-                                 my.resp.xy = df_data_in[,c("X", "Y")])
+                                 my.expl = df_data_in[, explvar],
+                                 my.resp.xy = df_data_in[, c("X", "Y")])
 
   sink()
 
