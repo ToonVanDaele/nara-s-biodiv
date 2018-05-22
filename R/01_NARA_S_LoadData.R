@@ -125,6 +125,10 @@ df_expl <- left_join(df_expl,
                       df_vargroup,
                       by = "varname")
 
+##### Load red list species
+df_redlist <- read.csv(file = paste0(path, "RL_planten.csv"), sep = ";")
+
 # Save results as binary files
 saveRDS(df_plant, "../data/data-in/df_plant.RDS")
 saveRDS(df_expl, "../data/data-in/df_expl.RDS")
+saveRDS(df_redlist, "../data/data-in/df_redlist.RDS")

@@ -9,17 +9,16 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 modelname <- "allsp"
-pathout <- paste0("../data/data-out/", modelname, "/")
+path <- paste0("../data/data-out/", modelname, "/")
 ```
 
 Generating output for NARA_S of model: **`r modelname`**
 
 ```{r loaddata}
-df_probs <- readRDS(file = paste0(pathout, "df_probs.RDS"))
-df_meval <- readRDS(file = paste0(pathout, "df_meval.RDS"))
-df_redlist <- read.csv(file = paste0("C:/Users/toon_vandaele/",
-  "toon.vandaele@inbo.be/Project_WET/NARA/NARA_S/DataIN/RL_planten.csv"),
-  sep = ";")
+df_probs <- readRDS(file = paste0(path, "df_probs.RDS"))
+df_meval <- readRDS(file = paste0(path, "df_meval.RDS"))
+df_redlist <- readRDS(file = paste0(path, "df_redlist.RDS"))
+
 colnames(df_redlist)[1] <- "sp_n"
 df_redlist$sp_n <- gsub("_", ".", df_redlist$sp_n)
 df_redlist$sp_n <- gsub("-", ".", df_redlist$sp_n)
@@ -35,8 +34,8 @@ df_sums <- df_probs %>%
   mutate_at(vars(contains("kr")),
                   .funs = funs(v = . - allsp_Current))
 
-saveRDS(df_sums, file = paste0(pathout, "df_sums.RDS"))
-write.table(df_sums, file = paste0(pathout, "df_sums.csv"),
+saveRDS(df_sums, file = paste0(path, "df_sums.RDS"))
+write.table(df_sums, file = paste0(path, "df_sums.csv"),
             quote = FALSE, sep = ";", dec = ",", row.names = FALSE)
 remove(df_sums)
 ```
@@ -57,8 +56,8 @@ df_sums_auc <- df_probs %>%
   mutate_at(vars(contains("kr")),
                   .funs = funs(v = . - allsp_Current))
 
-saveRDS(df_sums_auc, file = paste0(pathout, "df_sums_auc.RDS"))
-write.table(df_sums_auc, file = paste0(pathout, "df_sums_auc.csv"),
+saveRDS(df_sums_auc, file = paste0(path, "df_sums_auc.RDS"))
+write.table(df_sums_auc, file = paste0(path, "df_sums_auc.csv"),
             quote = FALSE, sep = ";", dec = ",", row.names = FALSE)
 remove(df_sums_auc)
 ```
@@ -80,8 +79,8 @@ df_sums_rl <- df_probs %>%
   mutate_at(vars(contains("kr")),
                   .funs = funs(v = . - allsp_Current))
 
-saveRDS(df_sums_rl, file = paste0(pathout, "df_sums_rl.RDS"))
-write.table(df_sums_rl, file = paste0(pathout, "df_sums_rl.csv"),
+saveRDS(df_sums_rl, file = paste0(path, "df_sums_rl.RDS"))
+write.table(df_sums_rl, file = paste0(path, "df_sums_rl.csv"),
             sep = ";", dec = ",")
 remove(df_sums_rl)
 ```
@@ -97,7 +96,7 @@ df_sums_rl_auc <- df_probs %>%
   mutate_at(vars(contains("kr")),
                   .funs = funs(v = . - allsp_Current))
 
-saveRDS(df_sums_rl_auc, file = paste0(pathout, "df_sums_rl_auc.RDS"))
-write.table(df_sums_rl_auc, file = paste0(pathout, "df_sums_rl_auc.csv"),
+saveRDS(df_sums_rl_auc, file = paste0(path, "df_sums_rl_auc.RDS"))
+write.table(df_sums_rl_auc, file = paste0(path, "df_sums_rl_auc.csv"),
             sep = ";", dec = ",")
 ```

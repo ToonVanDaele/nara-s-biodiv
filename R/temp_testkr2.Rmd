@@ -120,10 +120,12 @@ ggplot(df_check, aes(x = X, y = Y, color = verschil)) + geom_point() +
   coord_fixed()
 ```
 
-### Check df_proj_in from preprocessing
+### Check df_proj_in from preprocessing 
+
+modelname 'scentest'
 
 ```{r eval=FALSE, include=FALSE}
-df_proj_in <- readRDS("../data/data-in/scentest/df_proj_in.RDS")
+df_proj_in <- readRDS("../data/data-out/scentest/df_proj_in.RDS")
 
 df_check <- df_proj_in %>%
   select(utmID, X, Y, scen, akker) %>%

@@ -23,12 +23,12 @@ cat("Start - ", date(), "\n",
 #---------------------------------------------------------------------------
 # Load data
 #---------------------------------------------------------------------------
-pathin <- paste0("../data/data-in/", modelname, "/")
+path <- paste0("../data/data-out/", modelname, "/")
 
-df_proj_in <- readRDS(paste0(pathin, "df_proj_in.RDS"))
-explspec <- readRDS(paste0(pathin, "explspec.RDS"))
+df_proj_in <- readRDS(paste0(path, "df_proj_in.RDS"))
+explspec <- readRDS(paste0(path, "explspec.RDS"))
 
-db <- dbConnect(SQLite(), dbname = paste0(pathin, "speclist.sqlite"))
+db <- dbConnect(SQLite(), dbname = paste0(path, "speclist.sqlite"))
 speclist <- dbReadTable(db, "speclist")
 dbDisconnect(db)
 
