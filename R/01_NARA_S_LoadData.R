@@ -1,20 +1,23 @@
 #----------------------------------------------------------------------------
-# Step 1: Import data into RDS format
+# Step 1: Import plant & environmental data
 #
-# This script loads the data from a location (hard coded)
-# rearranges a bit and saves as RDS variables in ../data/data-in
+# Loads the data from a location (absolute path);
+# Some rearrangements and changes
+# save data as RDS variables in '../data/data-in'
 #----------------------------------------------------------------------------
 
 options(stringsAsFactors = FALSE)
 library(RODBC)
 library(tidyverse)
 
+path <- paste0("C:/Users/toon_vandaele/toon.vandaele@inbo.be/Project_WET/",
+          "NARA/NARA_S/DataIN/")
+
 #### Plant data ####
 
 ## Get data
-db_plant <- odbcConnectAccess2007(access.file = paste0("C:/Users/toon_vandaele",
-                    "/toon.vandaele@inbo.be/Project_WET/NARA/NARA_S/DataIN/",
-                    "Nara_planten_dataset.accdb"))
+db_plant <- odbcConnectAccess2007(access.file = paste0(path,
+                                          "Nara_planten_dataset.accdb"))
 
 df_plant <- sqlQuery(db_plant, "SELECT * FROM SoortenNaraNa2000",
                      stringsAsFactors = FALSE)
@@ -28,47 +31,33 @@ head(df_plant)
 ## Change column names
 colnames(df_plant)[1] <- "utmID"
 
-# Replace underscore in Taxoncode with a dot
-#(biomod doesn't like underscores for species name)
+# Replace underscore & hyphen by a dot
+#(biomod doesn't like underscores or hyphen in species name)
 df_plant$Taxoncode <- gsub("_", ".", df_plant$Taxoncode)
-# Replace underscore in Taxoncode with a dot
 df_plant$Taxoncode <- gsub("-", ".", df_plant$Taxoncode)
 
 #### Environmental data ####
 
 # Current
-df_cur <- read.csv2(paste0("C:/Users/toon_vandaele/toon.vandaele@inbo.be/",
-                            "Project_WET/NARA/NARA_S/DataIN/expl_var.txt"),
-                     stringsAsFactors = FALSE)
+df_cur <- read.csv2(paste0(path, "expl_var.txt"))
+
 df_cur$scen <- "Current"
 df_cur <- select(df_cur, -Shape_Length, -Shape_Area)
 
 # KR1
-df_kr1 <- read.csv2(paste0("C:/Users/toon_vandaele/toon.vandaele@inbo.be/",
-                            "Project_WET/NARA/NARA_S/DataIN/",
-                            "hotspotplanten_variabelen_KR1_2050.csv"),
-                     stringsAsFactors = FALSE)
+df_kr1 <- read.csv2(paste0(path, "hotspotplanten_variabelen_KR1_2050.csv"))
 df_kr1$scen <- "kr1"
 
 # KR2
-df_kr2 <- read.csv2(paste0("C:/Users/toon_vandaele/toon.vandaele@inbo.be/",
-                            "Project_WET/NARA/NARA_S/DataIN/",
-                            "hotspotplanten_variabelen_KR2_2050.csv"),
-                     stringsAsFactors = FALSE)
+df_kr2 <- read.csv2(paste0(path, "hotspotplanten_variabelen_KR2_2050.csv"))
 df_kr2$scen <- "kr2"
 
 #KR3
-df_kr3 <- read.csv2(paste0("C:/Users/toon_vandaele/toon.vandaele@inbo.be/",
-                            "Project_WET/NARA/NARA_S/DataIN/",
-                            "hotspotplanten_variabelen_KR3_2050.csv"),
-                     stringsAsFactors = FALSE)
+df_kr3 <- read.csv2(paste0(path, "hotspotplanten_variabelen_KR3_2050.csv"))
 df_kr3$scen <- "kr3"
 
 #KR4
-df_kr4 <- read.csv2(paste0("C:/Users/toon_vandaele/toon.vandaele@inbo.be/",
-                            "Project_WET/NARA/NARA_S/DataIN/",
-                            "hotspotplanten_variabelen_KR4_2050.csv"),
-                     stringsAsFactors = FALSE)
+df_kr4 <- read.csv2(paste0(path, "hotspotplanten_variabelen_KR4_2050.csv"))
 df_kr4$scen <- "kr4"
 
 # Define groups of explanatory variables:
@@ -79,14 +68,11 @@ luvar <- c("bebouwing", "wegen", "recreatie", "stadsgroen", "akker",
 soilvar <- c("textzand", "textleem", "textklei", "textveen", "textmergkrijt")
 condvar <- c("drainage", "potnatzilt", "potnattrofie", "potnatzuur")
 
-df_vargroup <- bind_rows(data.frame(vargroup = "lu",
-                                  varname = luvar),
-                       data.frame(vargroup = "soil",
-                                  varname = soilvar),
-                       data.frame(vargroup = "cond",
-                                  varname = condvar))
+df_vargroup <- bind_rows(data.frame(vargroup = "lu", varname = luvar),
+                       data.frame(vargroup = "soil", varname = soilvar),
+                       data.frame(vargroup = "cond", varname = condvar))
 
-# Some columns are missing in kr1 to  4
+# Some columns are missing in kr1..4 compared to the current scenario
 df_vars <- data.frame(varnames = names(df_cur),
                       kr1 = names(df_cur) %in% names(df_kr1),
                       kr2 = names(df_cur) %in% names(df_kr2),
@@ -95,16 +81,14 @@ df_vars <- data.frame(varnames = names(df_cur),
 
 df_vars
 
-# 'Stadsgroen' is missing in kr2 and kr3
-# 'Naaldbos' is missing in kr2 and kr4
-# 'wegen' doesn't exist in any kr
-df_kr2$stadsgroen <- NA
-df_kr3$stadsgroen <- NA
-df_kr2$naaldbos <- NA
-df_kr4$naaldbos <- NA
+# 'Stadsgroen' is missing in kr2 and kr3 (ok, not used in analysis)
+# 'Naaldbos' is missing in kr2 and kr4 (correct, will become 0)
+# 'wegen' is absent in all kr (ok, not used in analysis)
+df_kr2$stadsgroen <- df_kr3$stadsgroen <- NA
+df_kr2$naaldbos <- df_kr4$naaldbos <- NA
 df_kr1$wegen <- df_kr2$wegen <- df_kr3$wegen <- df_kr4$wegen <- NA
 
-# Complete kr1 to kr4 with soil and cond data
+# Add soil and cond data from current to kr1..kr4
 varsel <- c("TAG", "POINT_X", "POINT_Y", "Opp_m2", soilvar, condvar)
 df_kr1 <- left_join(df_kr1, df_cur[, varsel], by = "TAG")
 df_kr2 <- left_join(df_kr2, df_cur[, varsel], by = "TAG")
@@ -119,16 +103,13 @@ df_expl <- select(df_expl, -OBJECTID)
 # Change some column names
 colnames(df_expl)[c(1, 3, 4)] <- c("utmID", "X", "Y")
 
-# NA -> 0 voor bijna alle variabelen, behalve zuurgraad, trofie,
-c0 <- c("bebouwing", "wegen", "recreatie", "stadsgroen", "akker",
-        "prodgrasland", "heide", "loofbos", "naaldbos", "halfnatgras", "moeras",
-        "duinen", "slikschor", "ovlaaggroen", "water", "textzand", "textleem",
-        "textklei", "textveen", "textmergkrijt", "drainage", "potnatzilt")
+# NA -> 0 for almost all variables, except 'zuurgraad' & 'trofie'
+df_expl2 <- df_expl %>%
+  mutate_at(.vars = vars(-potnatzuur, -potnattrofie),
+            .funs = funs(replace(., is.na(.), 0)))
 
-df_expl[, c0][is.na(df_expl[, c0])] <- 0
-
-#m2 geeft te grote getallen, wat numerieke problemen geeft bij het
-#modelleren. Omzetting naar km2
+#Using m2 units give hughe numbers and numerical problems for modelling.
+#Transform m2 to km2 gives values between 0 and 1
 ckm <- c("bebouwing", "wegen", "recreatie", "stadsgroen", "akker",
         "prodgrasland", "heide", "loofbos", "naaldbos", "halfnatgras", "moeras",
         "duinen", "slikschor", "ovlaaggroen", "water", "potnatzilt")
@@ -139,6 +120,7 @@ df_expl[, ckm] <- df_expl[, ckm] / 1000000
 df_expl <- df_expl %>%
   gather(key = "varname", value = "value", -utmID, -X, -Y, -scen)
 
+# Add vargroup
 df_expl <- left_join(df_expl,
                       df_vargroup,
                       by = "varname")

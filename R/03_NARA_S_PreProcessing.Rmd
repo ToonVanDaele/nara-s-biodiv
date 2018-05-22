@@ -66,7 +66,7 @@ print(speclist$species)
 
 ### Projection data
 
-```{r}
+```{r projection data}
 df_proj_in <- df_expl %>%
   select(-vargroup) %>%
   filter(!varname == "Opp_m2") %>%

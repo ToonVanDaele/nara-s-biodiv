@@ -43,7 +43,7 @@ remove(df_sums)
 
 Model selection: Select only species with ensemble AUC >= 0.7
 
-```{r}
+```{r selection auc}
 sp_sel <- df_meval %>%
   filter(Eval.metric == "ROC", median >= 0.7) %>%
   distinct(sp_n) %>%
@@ -65,7 +65,7 @@ remove(df_sums_auc)
 
 Weighted species according RL status
 
-```{r}
+```{r weight RL status}
 df_redlist <- df_redlist %>%
   select(sp_n, RLweging) %>%
   filter(!is.na(RLweging))
@@ -88,7 +88,7 @@ remove(df_sums_rl)
 
 Model selection: Select only species with ensemble AUC >= 0.7 & Weighted species according RL status
 
-```{r}
+```{r weight RL status & auc}
 df_sums_rl_auc <- df_probs %>%
   filter(sp_n %in% sp_sel) %>%
   dplyr::group_by(utmID, projname) %>%

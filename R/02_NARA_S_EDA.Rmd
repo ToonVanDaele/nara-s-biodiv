@@ -176,7 +176,7 @@ nb_duinen <- df_expl %>%
 
 Duinen komt op 'r nb_duinen' locaties voor.
 
-```{r}
+```{r moeras}
 df_expl %>%
   filter(varname == "moeras" & scen == "Current") %>%
   ggplot(aes(x = value)) + geom_histogram(bins = 100)

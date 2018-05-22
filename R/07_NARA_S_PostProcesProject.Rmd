@@ -29,7 +29,7 @@ dbDisconnect(db)
 
 ## Probabilities from biomod projections
 
-```{r}
+```{r get probabilities}
 projs <- expand.grid(sp_n = speclist$species,
                      scen = unique(df_proj_in$scen),
                      stringsAsFactors = FALSE)
@@ -42,7 +42,7 @@ saveRDS(df_probs, file = paste0(pathout, "df_probs.RDS"))
 
 # Sum of probabilities and bins
 
-```{r}
+```{r sum probabilities}
 df_sums <- df_probs %>%
   dplyr::group_by(utmID, projname) %>%
   dplyr::summarise(probsum = sum(probs) / 1000,
@@ -63,7 +63,7 @@ saveRDS(df_sums, file = paste0(pathout, "df_sums.RDS"))
 
 ## Individual plots for each species (Current scenario only)
 
-```{r}
+```{r species projection binary}
 mypath <- paste0(pathout, "proj_bin/")
 dir.create(mypath, showWarnings = FALSE)
 
@@ -78,7 +78,7 @@ for (scen in scens){
 }
 ```
 
-```{r}
+```{r species projection continuous}
 mypath <- paste0(pathout, "proj_prob/")
 dir.create(mypath, showWarnings = FALSE)
 
