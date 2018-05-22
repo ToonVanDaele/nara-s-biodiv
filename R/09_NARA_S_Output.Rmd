@@ -17,9 +17,8 @@ Generating output for NARA_S of model: **`r modelname`**
 ```{r loaddata}
 df_probs <- readRDS(file = paste0(pathout, "df_probs.RDS"))
 df_meval <- readRDS(file = paste0(pathout, "df_meval.RDS"))
-df_redlist <- read.csv(file = paste0("C:/Users/toon_vandaele/",
-  "toon.vandaele@inbo.be/Project_WET/NARA/NARA_S/DataIN/RL_planten.csv"),
-  sep = ";")
+df_redlist <- readRDS(file = paste0(pathout, "df_redlist.RDS"))
+
 colnames(df_redlist)[1] <- "sp_n"
 df_redlist$sp_n <- gsub("_", ".", df_redlist$sp_n)
 df_redlist$sp_n <- gsub("-", ".", df_redlist$sp_n)
