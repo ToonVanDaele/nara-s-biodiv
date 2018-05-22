@@ -77,12 +77,12 @@ df_proj_in <- df_expl %>%
 ## Save preprocessed data
 
 ```{r saveppdata}
-mypath <- paste0("../data/data-in/", modelname, "/")
+mypath <- paste0("../data/data-out/", modelname, "/")
 dir.create(mypath, showWarnings = FALSE)
 
 saveRDS(df_data_in, paste0(mypath, "df_data_in.RDS"))
-saveRDS(explspec, paste0(mypath, "explspec.RDS"))
 saveRDS(df_proj_in, paste0(mypath, "df_proj_in.RDS"))
+saveRDS(explspec, paste0(mypath, "explspec.RDS"))
 saveRDS(df_redlist, paste0(mypath, "df_redlist.RDS"))
 
 db <- dbConnect(SQLite(), dbname = paste0(mypath, "speclist.sqlite"))

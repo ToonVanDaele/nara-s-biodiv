@@ -16,21 +16,21 @@ source("12_NARA_S_Runbiomod.R")
 modelname <- "allsp"
 modeldir <- "../data/models"
 
-pathin <- paste0("../data/data-in/", modelname, "/")
+path <- paste0("../data/data-out/", modelname, "/")
 
 cat("Start - ", date(), "\n",
     "Model directory: ", modeldir, "\n",
     "Modelname: ", modelname, "\n",
-    "data from dir: ", pathin, "\n")
+    "data from dir: ", path, "\n")
 
 #---------------------------------------------------------------------------
 # Load data
 #---------------------------------------------------------------------------
 
-df_data_in <- readRDS(paste0(pathin, "df_data_in.RDS"))
-explspec <- readRDS(paste0(pathin, "explspec.RDS"))
+df_data_in <- readRDS(paste0(path, "df_data_in.RDS"))
+explspec <- readRDS(paste0(path, "explspec.RDS"))
 
-db <- dbConnect(SQLite(), dbname = paste0(pathin, "speclist.sqlite"))
+db <- dbConnect(SQLite(), dbname = paste0(path, "speclist.sqlite"))
 speclist <- dbReadTable(db, "speclist")
 
 #---------------------------------------------------------------------------

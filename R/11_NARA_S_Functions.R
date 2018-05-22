@@ -122,7 +122,7 @@ plotbinaries <- function(df, path, titlecols) {
 # plotsum
 #--------------------------------------------------------
 
-plotsum <- function(df, pathout) {
+plotsum <- function(df, path) {
 
   title <- df[1, "projname"]
 
@@ -132,7 +132,7 @@ plotsum <- function(df, pathout) {
        coord_fixed()) +
        ggtitle(title)
 
-  ggsave(paste0(pathout, title, "_probsum.png"), p)
+  ggsave(paste0(path, title, "_probsum.png"), p)
 
   (p <- ggplot(df, aes(x = X, y = Y)) +
         geom_point(aes(colour = binsum), size = 1) +
@@ -140,7 +140,7 @@ plotsum <- function(df, pathout) {
         coord_fixed()) +
         ggtitle(title)
 
-  ggsave(paste0(pathout, title, "_binsum.png"), p)
+  ggsave(paste0(path, title, "_binsum.png"), p)
 
 }
 
@@ -182,7 +182,7 @@ get_variable_importance <- function(sp_n, modelname){
 #' @param model_name model name
 #' @return a data frame
 #----------------------------------------------------------------------------
-create_responseplot <- function(sp_n, modelname, pathout){
+create_responseplot <- function(sp_n, modelname){
 
   filenameEM <- paste0(sp_n, "/", sp_n, ".", modelname, "ensemble.models.out")
 

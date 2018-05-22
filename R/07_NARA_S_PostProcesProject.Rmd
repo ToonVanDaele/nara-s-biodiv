@@ -14,15 +14,15 @@ library(pander)
 library(RSQLite)
 source("11_NARA_S_Functions.R")
 modelname <- "allsp" #params$modelname
-pathin <- paste0("../data/data-in/", modelname, "/")
-pathout <- paste0("../data/data-out/", modelname, "/")
+path <- paste0("../data/data-out/", modelname, "/")
 ```
 
 Postprocessing of the projections of model: **`r modelname`**
+Path to data: `r path`
 
 ```{r loaddata}
-df_proj_in <- readRDS(paste0(pathin, "df_proj_in.RDS"))
-db <- dbConnect(SQLite(), dbname = paste0(pathin, "speclist.sqlite"))
+df_proj_in <- readRDS(paste0(path, "df_proj_in.RDS"))
+db <- dbConnect(SQLite(), dbname = paste0(path, "speclist.sqlite"))
 speclist <- dbReadTable(db, "speclist")
 dbDisconnect(db)
 ```
@@ -37,7 +37,7 @@ projs$projname <- paste0(modelname, "_", projs$scen)
 
 df_probs <- pmap_dfr(projs, getprobs, df_proj_in)
 
-saveRDS(df_probs, file = paste0(pathout, "df_probs.RDS"))
+saveRDS(df_probs, file = paste0(path, "df_probs.RDS"))
 ```
 
 # Sum of probabilities and bins
@@ -56,15 +56,15 @@ df_sums <- left_join(df_sums, df_idxy, by = "utmID")
 
 sumplots <- df_sums %>%
   split(.$projname) %>%
-  map(., plotsum, pathout)
+  map(., plotsum, path)
 
-saveRDS(df_sums, file = paste0(pathout, "df_sums.RDS"))
+saveRDS(df_sums, file = paste0(path, "df_sums.RDS"))
 ```
 
 ## Individual plots for each species (Current scenario only)
 
 ```{r species projection binary}
-mypath <- paste0(pathout, "proj_bin/")
+mypath <- paste0(path, "proj_bin/")
 dir.create(mypath, showWarnings = FALSE)
 
 scens <- unique(df_probs$projname)
@@ -79,7 +79,7 @@ for (scen in scens){
 ```
 
 ```{r species projection continuous}
-mypath <- paste0(pathout, "proj_prob/")
+mypath <- paste0(path, "proj_prob/")
 dir.create(mypath, showWarnings = FALSE)
 
 for (scen in scens){
