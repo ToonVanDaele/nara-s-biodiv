@@ -4,7 +4,7 @@ author: "Toon Van Daele"
 date: "`r Sys.Date()`"
 output: html_document
 params:
-  modelname
+  modelname: "none"
 ---
 
 ```{r setup, include=FALSE}
@@ -12,8 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(RSQLite)
 source("11_NARA_S_Functions.R")
-
-modelname <- "allsp" # params$modelname
+modelname <- params$modelname  # "test"
 ```
 
 ```{r load_data}
@@ -23,6 +22,8 @@ speclist <- readRDS("../data/data-in/speclist_eda.RDS")
 explspec <- readRDS("../data/data-in/explspec_eda.RDS")
 df_redlist <- readRDS("../data/data-in/df_redlist.RDS")
 ```
+
+Preprocessing for the model run: **`r modelname`**
 
 ## Spread plant data
 

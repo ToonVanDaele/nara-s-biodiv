@@ -3,12 +3,14 @@ title: "NARA_S_Output"
 author: "Toon Van Daele"
 date: "28 februari 2018"
 output: html_document
+params:
+  modelname: "none"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-modelname <- "allsp"
+modelname <- params$modelname #"allsp"
 path <- paste0("../data/data-out/", modelname, "/")
 ```
 

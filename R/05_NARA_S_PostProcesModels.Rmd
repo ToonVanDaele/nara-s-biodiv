@@ -4,7 +4,7 @@ author: "Toon Van Daele"
 date: "`r Sys.Date()`"
 output: html_document
 params:
-  modelname: testsel
+  modelname: "none"
   calcvarimp : FALSE
 ---
 
@@ -16,8 +16,8 @@ library(RSQLite)
 library(ggplot2)
 source("11_NARA_S_Functions.R")
 options(stringsAsFactors = FALSE)
-modelname <- "allsp" #params$modelname
-calcvarimp <- TRUE #params$calcvarimp
+modelname <- params$modelname #"allsp" 
+calcvarimp <- params$calcvarimp
 ```
 
 Postprocessing of the results of the model run: **`r modelname`**

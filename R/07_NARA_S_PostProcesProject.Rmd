@@ -4,7 +4,7 @@ author: "Toon Van Daele"
 date: "`r Sys.Date()`s"
 output: html_document
 params:
-  modelname: test
+  modelname: "none"
 ---
 
 ```{r setup, include=FALSE}
@@ -13,7 +13,7 @@ library(tidyverse)
 library(pander)
 library(RSQLite)
 source("11_NARA_S_Functions.R")
-modelname <- "allsp" #params$modelname
+modelname <- params$modelname  #test
 path <- paste0("../data/data-out/", modelname, "/")
 ```
 
