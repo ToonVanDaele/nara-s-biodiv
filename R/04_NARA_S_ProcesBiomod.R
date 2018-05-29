@@ -7,72 +7,73 @@
 #             modelname = name of the model run
 #------------------------------------------------------------------------------
 
-library(biomod2)
-library(tidyverse)
-library(RSQLite)
-source("11_NARA_S_Functions.R")
-source("12_NARA_S_Runbiomod.R")
+procesbiomod <- function(modelname = "test") {
 
-modelname <- "allsp"
-modeldir <- "../data/models"
+  library(biomod2)
+  library(tidyverse)
+  library(RSQLite)
+  source("11_NARA_S_Functions.R")
+  source("12_NARA_S_Runbiomod.R")
 
-path <- paste0("../data/data-out/", modelname, "/")
+  modeldir <- "../data/models"
+  path <- paste0("../data/data-out/", modelname, "/")
 
-cat("Start - ", date(), "\n",
-    "Model directory: ", modeldir, "\n",
-    "Modelname: ", modelname, "\n",
-    "data from dir: ", path, "\n")
+  cat("Start - ", date(), "\n",
+      "Model directory: ", modeldir, "\n",
+      "Modelname: ", modelname, "\n",
+      "data from dir: ", path, "\n")
 
-#---------------------------------------------------------------------------
-# Load data
-#---------------------------------------------------------------------------
+  #---------------------------------------------------------------------------
+  # Load data
+  #---------------------------------------------------------------------------
 
-df_data_in <- readRDS(paste0(path, "df_data_in.RDS"))
-explspec <- readRDS(paste0(path, "explspec.RDS"))
+  df_data_in <- readRDS(paste0(path, "df_data_in.RDS"))
+  explspec <- readRDS(paste0(path, "explspec.RDS"))
 
-db <- dbConnect(SQLite(), dbname = paste0(path, "speclist.sqlite"))
-speclist <- dbReadTable(db, "speclist")
+  db <- dbConnect(SQLite(), dbname = paste0(path, "speclist.sqlite"))
+  speclist <- dbReadTable(db, "speclist")
 
-#---------------------------------------------------------------------------
-# Run biomod in a loop for all species in speclist
-# models are stored on hard disk in the working directory
-#---------------------------------------------------------------------------
+  #---------------------------------------------------------------------------
+  # Run biomod in a loop for all species in speclist
+  # models are stored on hard disk in the working directory
+  #---------------------------------------------------------------------------
 
-#Select only species that didn't run yet (modelrun == "-")
-my.spec <- speclist %>%
-  filter(modelrun == "-") %>%
-  dplyr::select("species") %>%
-  pull()
+  #Select only species that didn't run yet (modelrun == "-")
+  my.spec <- speclist %>%
+    filter(modelrun == "-") %>%
+    dplyr::select("species") %>%
+    pull()
 
-if (length(my.spec) == 0) {
-  print("No models to run - check modelname")
-  }
+  if (length(my.spec) == 0) {
+    print("No models to run - check modelname")
+    }
 
-setwd(modeldir)
+  setwd(modeldir)
 
-walk2(.x = my.spec, .y = modelname, .f = function(sp.n, modelname){
+  walk2(.x = my.spec, .y = modelname, .f = function(sp.n, modelname){
 
-  cat(modelname, " - ", sp.n, "\n")
+    cat(modelname, " - ", sp.n, "\n")
 
-  my.resp <- df_data_in[, sp.n]
-  explvar <- explspec %>%
-    filter(sp_n == sp.n) %>%
-    dplyr::select(varname) %>%
-    pull() %>%
-    intersect(colnames(df_data_in))
+    my.resp <- df_data_in[, sp.n]
+    explvar <- explspec %>%
+      filter(sp_n == sp.n) %>%
+      dplyr::select(varname) %>%
+      pull() %>%
+      intersect(colnames(df_data_in))
 
-  sink("Out.txt", append = TRUE)
-  model.return <- Biomod_modeling(sp.n = sp.n,
-                                 model.name = modelname,
-                                 my.resp = my.resp,
-                                 my.expl = df_data_in[, explvar],
-                                 my.resp.xy = df_data_in[, c("X", "Y")])
+    sink("Out.txt", append = TRUE)
+    model.return <- Biomod_modeling(sp.n = sp.n,
+                                   model.name = modelname,
+                                   my.resp = my.resp,
+                                   my.expl = df_data_in[, explvar],
+                                   my.resp.xy = df_data_in[, c("X", "Y")])
 
-  sink()
+    sink()
 
-  dbSendQuery(db, paste0("UPDATE speclist SET modelrun = '", model.return,
-                   "' WHERE species = '", sp.n, "'"))
-  })
+    dbSendQuery(db, paste0("UPDATE speclist SET modelrun = '", model.return,
+                     "' WHERE species = '", sp.n, "'"))
+    })
 
-  dbDisconnect(db)
-  cat(date())
+    dbDisconnect(db)
+    cat(date())
+}

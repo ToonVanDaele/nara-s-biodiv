@@ -15,6 +15,7 @@ rmarkdown::render("03_NARA_S_PreProcessing.Rmd", output_dir = pathout,
 
 # 4 Biomod modelling
 source("04_NARA_S_ProcesBiomod.R")
+procesbiomod(modelname = modelname)
 
 # 5 Post process biomod modelling
 rmarkdown::render("05_NARA_S_PostProcesModels.Rmd", output_dir = pathout,
@@ -23,6 +24,7 @@ rmarkdown::render("05_NARA_S_PostProcesModels.Rmd", output_dir = pathout,
 
 # 6 Biomod projections
 source("06_NARA_S_ProjectBiomod.R")
+projectbiomod(modelname = modelname)
 
 # 7 Post proces projections
 rmarkdown::render("07_NARA_S_PostProcesProject.Rmd", output_dir = pathout,

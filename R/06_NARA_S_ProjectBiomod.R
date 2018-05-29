@@ -7,64 +7,66 @@
 #             modelname = name of the model run
 #------------------------------------------------------------------------------
 
-library(biomod2)
-library(tidyverse)
-library(RSQLite)
-source("11_NARA_S_Functions.R")
-source("12_NARA_S_Runbiomod.R")
+projectbiomod <- function(modelname = "test"){
 
-modeldir <- "../data/models"
-modelname <- "allsp"
+  library(biomod2)
+  library(tidyverse)
+  library(RSQLite)
+  source("11_NARA_S_Functions.R")
+  source("12_NARA_S_Runbiomod.R")
 
-cat("Start - ", date(), "\n",
-    "model directory: ", modeldir, "\n",
-    "Modelname: ", modelname)
+  modeldir <- "../data/models"
 
-#---------------------------------------------------------------------------
-# Load data
-#---------------------------------------------------------------------------
-path <- paste0("../data/data-out/", modelname, "/")
+  cat("Start - ", date(), "\n",
+      "model directory: ", modeldir, "\n",
+      "Modelname: ", modelname)
 
-df_proj_in <- readRDS(paste0(path, "df_proj_in.RDS"))
-explspec <- readRDS(paste0(path, "explspec.RDS"))
+  #---------------------------------------------------------------------------
+  # Load data
+  #---------------------------------------------------------------------------
+  path <- paste0("../data/data-out/", modelname, "/")
 
-db <- dbConnect(SQLite(), dbname = paste0(path, "speclist.sqlite"))
-speclist <- dbReadTable(db, "speclist")
-dbDisconnect(db)
+  df_proj_in <- readRDS(paste0(path, "df_proj_in.RDS"))
+  explspec <- readRDS(paste0(path, "explspec.RDS"))
 
-# List of projections to be made
-projs <- expand.grid(proj = unique(df_proj_in$scen),
-                     sp.n = speclist$species,
-                     modelname = modelname,
-                     stringsAsFactors = FALSE)
+  db <- dbConnect(SQLite(), dbname = paste0(path, "speclist.sqlite"))
+  speclist <- dbReadTable(db, "speclist")
+  dbDisconnect(db)
 
-#---------------------------------------------------------------------------
-# Run biomod projection in a loop for all species and scenarios
-# The projections are stored on hard disk in the working directory
-#---------------------------------------------------------------------------
+  # List of projections to be made
+  projs <- expand.grid(proj = unique(df_proj_in$scen),
+                       sp.n = speclist$species,
+                       modelname = modelname,
+                       stringsAsFactors = FALSE)
 
-setwd(modeldir)
+  #---------------------------------------------------------------------------
+  # Run biomod projection in a loop for all species and scenarios
+  # The projections are stored on hard disk in the working directory
+  #---------------------------------------------------------------------------
 
-pwalk(.l = projs, .f = function(proj, sp.n, modelname){
+  setwd(modeldir)
 
-  cat(modelname, " - ", proj, " - ", sp.n, "\n")
+  pwalk(.l = projs, .f = function(proj, sp.n, modelname){
 
-  explvar <- explspec %>%
-    filter(sp_n == sp.n) %>%
-    dplyr::select(varname) %>%
-    pull()
+    cat(modelname, " - ", proj, " - ", sp.n, "\n")
 
-  projdata <- filter(df_proj_in, scen == proj)
+    explvar <- explspec %>%
+      filter(sp_n == sp.n) %>%
+      dplyr::select(varname) %>%
+      pull()
 
-  sink("Out_proj.txt", append = TRUE)
+    projdata <- filter(df_proj_in, scen == proj)
 
-  project.return <- biomod_projection(sp.n = sp.n,
-                                 model.name = modelname,
-                                 my.proj = projdata[, explvar],
-                                 my.proj.xy = projdata[, c("X", "Y")],
-                                 proj.name = paste0(modelname, "_", proj))
-  sink()
+    sink("Out_proj.txt", append = TRUE)
 
-  })
+    project.return <- biomod_projection(sp.n = sp.n,
+                                   model.name = modelname,
+                                   my.proj = projdata[, explvar],
+                                   my.proj.xy = projdata[, c("X", "Y")],
+                                   proj.name = paste0(modelname, "_", proj))
+    sink()
 
-  cat(date())
+    })
+
+    cat(date())
+}
