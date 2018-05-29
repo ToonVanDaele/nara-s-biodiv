@@ -1,9 +1,11 @@
 ---
-title: "EDA_scenarios"
+title: "Zoeken_anomalie"
 author: "Toon Van Daele"
 date: "15 mei 2018"
 output: html_document
 ---
+
+# Terugvinden van de bron van de anomalie in de kaarten
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
