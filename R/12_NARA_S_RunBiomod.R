@@ -36,14 +36,14 @@ Biomod_modeling <- function(sp_n,
     my_biomod_data,
     models = c("GAM"),
     models.options = my_biomodoption,
-    NbRunEval = 10,   # Only for testing. Needs higher number
+    NbRunEval = 10,
     DataSplit = 70,
-    Yweights = NULL,
+    Prevalence = 0.5,
     VarImport = 0,
     models.eval.meth = c("TSS", "ROC"),
     SaveObj = TRUE,
     rescal.all.models = TRUE,
-    do.full.models = FALSE,      #Default is TRUE
+    do.full.models = FALSE,
     modeling.id = model_name)
 
   #my_biomodmodel_out
