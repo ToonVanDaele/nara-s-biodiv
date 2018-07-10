@@ -104,7 +104,7 @@ df_expl <- select(df_expl, -OBJECTID)
 colnames(df_expl)[c(1, 3, 4)] <- c("utmID", "X", "Y")
 
 # NA -> 0 for almost all variables, except 'zuurgraad' & 'trofie'
-df_expl2 <- df_expl %>%
+df_expl <- df_expl %>%
   mutate_at(.vars = vars(-potnatzuur, -potnattrofie),
             .funs = funs(replace(., is.na(.), 0)))
 
@@ -128,7 +128,13 @@ df_expl <- left_join(df_expl,
 ##### Load red list species
 df_redlist <- read.csv(file = paste0(path, "RL_planten.csv"), sep = ";")
 
+#### load ecoregions utmID
+df_ecoreg <- foreign::read.dbf(file = paste0(path, "ifblecoregio.dbf"),
+                              as.is = TRUE)
+df_ecoreg <- select(df_ecoreg, regio = REGIO, utmID = TAG)
+
 # Save results as binary files
 saveRDS(df_plant, "../data/data-in/df_plant.RDS")
 saveRDS(df_expl, "../data/data-in/df_expl.RDS")
 saveRDS(df_redlist, "../data/data-in/df_redlist.RDS")
+saveRDS(df_ecoreg, "../data/data-in/df_ecoreg.RDS")

@@ -266,7 +266,7 @@ getexplvar <- function(sp_n, spr_plant, df_expl) {
 
 gam_formula <- function(spname, varnames) {
 
-  varcs <- paste0("s(", varnames, ", k = 3, bs='cs')")
+  varcs <- paste0("s(", varnames, ", k = -1, bs='cs')")
 
   fromstr <- paste0(spname, " ~ 1 +",
                     paste(varcs, collapse = " + "))

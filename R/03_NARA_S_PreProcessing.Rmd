@@ -58,11 +58,6 @@ df_data_in <- inner_join(x = df_expl_in,
 ```{r speclist}
 speclist <- data.frame(species = colnames(df_plant_in)[-1],
                        modelrun = "-")
-
-sp_selection <- c("acer.cam", "chenofic", "epilomon")
-
-speclist <- filter(speclist, species %in% sp_selection)
-
 print(speclist$species)
 ```
 

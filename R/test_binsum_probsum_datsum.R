@@ -43,7 +43,6 @@ df_t1 <- df_eval %>%
   spread(key = metric, value = value)
 
 
-
 # Species prevalence
 df_t2 <- df_data_in %>%
   dplyr::select(sp_n_all) %>%
@@ -53,25 +52,24 @@ df_t2 <- df_data_in %>%
 
 df_tt <- left_join(df_t1, df_t2, by = "sp_n")
 
-# AUC versus prevalence
-ggplot(df_tt, aes(x = prevalence, y = mROC)) + geom_point() + geom_smooth()
+# AUC/ROC versus TSS
+ggplot(df_tt, aes(x = mEval_TSS, y = mEval_ROC)) + geom_point() + geom_smooth()
 
-
-
-
-df_tt %>%
-  filter(mROC >= 0.4) %>%
-  ggplot(aes(x = prevalence, y = mROC)) + geom_point() + geom_smooth()
+# AUC/ROC and TSS versus prevalence
+ggplot(df_tt, aes(x = prevalence, y = mEval_ROC)) + geom_point() + geom_smooth()
+ggplot(df_tt, aes(x = prevalence, y = mEval_TSS)) + geom_point() + geom_smooth()
 
 # Threshold (cutoff) versus presences
-ggplot(df_tt, aes(x = prevalence, y = mCutoff)) + geom_point() + geom_smooth()
+ggplot(df_tt, aes(x = prevalence, y = mCutoff_ROC)) + geom_point() + geom_smooth()
+ggplot(df_tt, aes(x = prevalence, y = mCutoff_TSS)) + geom_point() + geom_smooth()
 
 # Senisitity versus presences
-ggplot(df_tt, aes(x = prevalence, y = mSensitivity)) + geom_point() + geom_smooth()
+ggplot(df_tt, aes(x = prevalence, y = mSens_ROC)) + geom_point() + geom_smooth()
+ggplot(df_tt, aes(x = prevalence, y = mSens_TSS)) + geom_point() + geom_smooth()
 
 # Specificity versus presences
-ggplot(df_tt, aes(x = prevalence, y = mSpecificity)) + geom_point() + geom_smooth()
-
+ggplot(df_tt, aes(x = prevalence, y = mSpec_ROC)) + geom_point() + geom_smooth()
+ggplot(df_tt, aes(x = prevalence, y = mSpec_TSS)) + geom_point() + geom_smooth()
 
 # Verify Binsum (sum of binary results), probsum (sum of probabilitie),
 # datasum (sum of observation data)
@@ -84,7 +82,7 @@ df_plant_data[is.na(df_plant_data)] <- 0
 # Join mROC and prevalence information
 df_plant_data <- left_join(x = df_plant_data,
                            y = df_tt %>%
-                             dplyr::select(sp_n, mROC, prevalence),
+                             dplyr::select(sp_n, mEval_ROC, mEval_TSS, prevalence),
                            by = "sp_n")
 
 df_probbin <- df_probs %>%
@@ -98,7 +96,7 @@ df_all <- inner_join(x = df_plant_data,
 head(df_all)
 
 df_all_sums <- df_all %>%
-  filter(mROC >= 0.7) %>%
+  filter(mEval_ROC >= 0.7) %>%
   group_by(utmID) %>%
   summarise(datasum = sum(presence),
             probsum = sum(probs) / 1000,
@@ -126,32 +124,36 @@ df_sp_prev <- df_all %>%
   left_join(y = df_tt,
             by = "sp_n")
 
-df_sp_prev$lroc <- cut(x = df_sp_prev$mROC, breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1))
+df_sp_prev$lroc <- cut(x = df_sp_prev$mEval_ROC, breaks = c(0.5, 0.6, 0.7, 0.8, 0.9, 1))
 
-df_sp_prev$lthres <- cut(x = df_sp_prev$mCutoff, breaks = c(212, 454, 495, 534, 670))
+df_sp_prev$lthres <- cut(x = df_sp_prev$mCutoff_ROC, breaks = c(212, 454, 495, 534, 670))
 
 ggplot(df_sp_prev, aes(x = prev_data, y = prev_probs, colour = lroc)) + geom_point()
 
 ggplot(df_sp_prev, aes(x = prev_data, y = prev_probs, colour = lthres)) + geom_point()
 
 df_sp_prev %>%
-  filter(mROC >= 0.4) %>%
-  ggplot(aes(x = prev_data, y = prev_bins)) + geom_point() +
-    geom_abline(slope = 1) + geom_smooth()
-
-df_sp_prev %>%
-  filter(mROC >= 0.4) %>%
+  filter(mEval_ROC >= 0.7) %>%
   ggplot(aes(x = prev_data, y = prev_probs)) + geom_point() +
     geom_abline(slope = 1) + geom_smooth()
 
+df_sp_prev %>%
+  filter(mEval_ROC >= 0.7) %>%
+  ggplot(aes(x = prev_data, y = prev_bins)) + geom_point() +
+    geom_abline(slope = 1) + geom_smooth()
+
+ggplot(df_sp_prev, aes(x = prev_data, y = mCutoff_ROC, colour = lroc)) + geom_point()
+ggplot(df_sp_prev, aes(x = prev_data, y = mCutoff_TSS, colour = lroc)) + geom_point()
 
 ggplot(df_sp_prev, aes(x = prev_probs, y = prev_bins, colour = lroc)) + geom_point()
 
-ggplot(df_sp_prev, aes(x = prev_probs, y = mCutoff, colour = lroc)) + geom_point()
-ggplot(df_sp_prev, aes(x = prev_bins, y = mCutoff, colour = lroc)) + geom_point()
-ggplot(df_sp_prev, aes(x = prev_data, y = mCutoff, colour = lroc)) + geom_point()
+ggplot(df_sp_prev, aes(x = prev_probs, y = mCutoff_ROC, colour = lroc)) + geom_point()
+ggplot(df_sp_prev, aes(x = prev_bins, y = mCutoff_ROC, colour = lroc)) + geom_point()
 
-ggplot(df_sp_prev, aes(x = mROC, y = prev_bins - prev_data)) + geom_point()
-ggplot(df_sp_prev, aes(x = mROC, y = prev_probs - prev_data, colour = lroc)) + geom_point()
+ggplot(df_sp_prev, aes(x = mEval_ROC, y = prev_bins - prev_data)) + geom_point()
+ggplot(df_sp_prev, aes(x = mEval_ROC, y = prev_probs - prev_data)) + geom_point()
+
+ggplot(df_sp_prev, aes(x = mEval_ROC, y = prev_data)) + geom_point()
+ggplot(df_sp_prev, aes(x = mEval_TSS, y = prev_data)) + geom_point()
 
 
