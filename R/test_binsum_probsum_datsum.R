@@ -2,7 +2,7 @@
 
 
 library(tidyverse)
-modelname <- "kappa"
+modelname <- "algo"
 path <- paste0("../data/data-out/", modelname, "/")
 
 df_eval <- readRDS(file = paste0(path, "df_eval.RDS"))
@@ -21,13 +21,11 @@ nbutm <- length(utmIDs)
 
 # Evaluation metrics per species model TSS, ROC, Kappa
 df_t1 <- df_eval %>%
-  group_by(sp_n, Eval.metric) %>%
+  group_by(sp_n, algo, Eval.metric) %>%
   summarise(mEval = mean(Testing.data),
-            mCutoff = mean(Cutoff),
-            mSens = mean(Sensitivity),
-            mSpec = mean(Specificity)) %>%
-  gather(key = metric, value = value, -sp_n, -Eval.metric) %>%
-  unite(col = "metric", c("metric", "Eval.metric")) %>%
+            mCutoff = mean(Cutoff)) %>%
+  gather(key = metric, value = value, -sp_n, -Eval.metric, -algo) %>%
+  unite(col = "metric", c("algo", "Eval.metric", "metric")) %>%
   spread(key = metric, value = value)
 
 # Species prevalence
@@ -40,7 +38,12 @@ df_t2 <- df_data_in %>%
 df_tt <- left_join(df_t1, df_t2, by = "sp_n")
 
 # ROC, TSS, KAPPA
-pairs(df_tt[,c("mEval_TSS", "mEval_ROC", "mEval_KAPPA")])
+pairs(df_tt[,c("GAM_TSS_mEval", "RF_TSS_mEval",
+               "GAM_ROC_mEval", "RF_ROC_mEval",
+               "GAM_KAPPA_mEval", "RF_KAPPA_mEval")])
+
+ggplot(df_tt, aes(x = GAM_ROC_mEval, y = RF_ROC_mEval)) + geom_point() +
+  geom_smooth() + geom_abline(slope = 1)
 
 # AUC/ROC and TSS versus prevalence
 ggplot(df_tt, aes(x = prevalence, y = mEval_ROC)) + geom_point() + geom_smooth()
@@ -48,16 +51,8 @@ ggplot(df_tt, aes(x = prevalence, y = mEval_TSS)) + geom_point() + geom_smooth()
 ggplot(df_tt, aes(x = prevalence, y = mEval_KAPPA)) + geom_point() + geom_smooth()
 
 # Threshold (cutoff) versus presences
-ggplot(df_tt, aes(x = prevalence, y = mCutoff_ROC)) + geom_point() + geom_smooth()
+ggplot(df_tt, aes(x = prevalence, y = RF_ROC_mCutoff)) + geom_point() + geom_smooth()
 ggplot(df_tt, aes(x = prevalence, y = mCutoff_TSS)) + geom_point() + geom_smooth()
-
-# Senisitity versus presences
-ggplot(df_tt, aes(x = prevalence, y = mSens_ROC)) + geom_point() + geom_smooth()
-ggplot(df_tt, aes(x = prevalence, y = mSens_TSS)) + geom_point() + geom_smooth()
-
-# Specificity versus presences
-ggplot(df_tt, aes(x = prevalence, y = mSpec_ROC)) + geom_point() + geom_smooth()
-ggplot(df_tt, aes(x = prevalence, y = mSpec_TSS)) + geom_point() + geom_smooth()
 
 # Verify Binsum (sum of binary results), probsum (sum of probabilitie),
 # datasum (sum of observation data)
@@ -70,12 +65,13 @@ df_plant_data[is.na(df_plant_data)] <- 0
 # Join mROC and prevalence information
 df_plant_data <- left_join(x = df_plant_data,
                            y = df_tt %>%
-                             dplyr::select(sp_n, mEval_ROC, mEval_TSS,
-                                           mEval_KAPPA, prevalence),
+                             dplyr::select(sp_n, prevalence,
+                                           GAM_ROC_mEval, GAM_KAPPA_mEval,
+                                           RF_ROC_mEval, RF_KAPPA_mEval),
                            by = "sp_n")
 
 df_probbin <- df_probs %>%
-  filter(projname == "kappa_Current" &
+  filter(projname == "algo_Current" &
            utmID %in% utmIDs)
 
 df_all <- inner_join(x = df_plant_data,
@@ -85,7 +81,6 @@ df_all <- inner_join(x = df_plant_data,
 head(df_all)
 
 df_all_sums <- df_all %>%
-  filter(mEval_ROC >= 0.7) %>%
   group_by(utmID) %>%
   summarise(datasum = sum(presence),
             probsum = sum(probs) / 1000,

@@ -34,7 +34,7 @@ Biomod_modeling <- function(sp_n,
   # Modeling
   my_biomodmodel_out <- BIOMOD_Modeling(
     my_biomod_data,
-    models = c("GAM"),
+    models = c("GAM", "RF"),
     models.options = my_biomodoption,
     NbRunEval = 10,
     DataSplit = 70,
@@ -46,12 +46,10 @@ Biomod_modeling <- function(sp_n,
     do.full.models = FALSE,
     modeling.id = model_name)
 
-  #my_biomodmodel_out
-
   # Modeling ensemble
   my_biomod_em <- BIOMOD_EnsembleModeling(modeling.output = my_biomodmodel_out,
                            chosen.models = "all",
-                           em.by = "all",
+                           em.by = "PA_dataset+algo",
                            eval.metric = NULL,
                            eval.metric.quality.threshold = NULL,
                            models.eval.meth = c("TSS", "ROC", "KAPPA"),

@@ -20,10 +20,6 @@ Generating output for NARA_S of model: **`r modelname`**
 df_probs <- readRDS(file = paste0(path, "df_probs.RDS"))
 df_meval <- readRDS(file = paste0(path, "df_meval.RDS"))
 df_redlist <- readRDS(file = paste0(path, "df_redlist.RDS"))
-
-colnames(df_redlist)[1] <- "sp_n"
-df_redlist$sp_n <- gsub("_", ".", df_redlist$sp_n)
-df_redlist$sp_n <- gsub("-", ".", df_redlist$sp_n)
 ```
 
 All species and all models
@@ -34,7 +30,7 @@ df_sums <- df_probs %>%
   dplyr::summarise(probsum = sum(probs) / 1000) %>%
   spread(key = projname, value = probsum) %>%
   mutate_at(vars(contains("kr")),
-                  .funs = funs(v = . - kappa_Current))
+                  .funs = funs(v = . - get(paste0(modelname, "_Current"))))
 
 saveRDS(df_sums, file = paste0(path, "df_sums.RDS"))
 write.table(df_sums, file = paste0(path, "df_sums.csv"),
@@ -46,9 +42,11 @@ Model selection: Select only species with ensemble AUC >= 0.7
 
 ```{r selection auc}
 sp_sel <- df_meval %>%
-  filter(Eval.metric == "ROC", median >= 0.7) %>%
-  distinct(sp_n) %>%
-  pull()
+  filter(Eval.metric == "ROC") %>%
+  group_by(sp_n) %>%
+  summarise(medianROC = mean(median)) %>%
+  filter(medianROC >= 0.7) %>%
+  pull(sp_n)
 
 df_sums_auc <- df_probs %>%
   filter(sp_n %in% sp_sel) %>%
@@ -56,51 +54,11 @@ df_sums_auc <- df_probs %>%
   dplyr::summarise(probsum = sum(probs) / 1000) %>%
   spread(key = projname, value = probsum) %>%
   mutate_at(vars(contains("kr")),
-                  .funs = funs(v = . - kappa_Current))
+                  .funs = funs(v = . - get(paste0(modelname, "_Current"))))
 
 saveRDS(df_sums_auc, file = paste0(path, "df_sums_auc.RDS"))
 write.table(df_sums_auc, file = paste0(path, "df_sums_auc.csv"),
             quote = FALSE, sep = ";", dec = ",", row.names = FALSE)
 remove(df_sums_auc)
 ```
-
-Weighted species according RL status
-
-```{r weight RL status, eval=FALSE, include=FALSE}
-df_redlist <- df_redlist %>%
-  select(sp_n, RLweging) %>%
-  filter(!is.na(RLweging))
-
-df_probs <- df_probs %>%
-  left_join(df_redlist, by = "sp_n")
-
-df_sums_rl <- df_probs %>%
-  dplyr::group_by(utmID, projname) %>%
-  dplyr::summarise(probsum = sum(probs * RLweging, na.rm = TRUE) / 1000) %>%
-  spread(key = projname, value = probsum) %>%
-  mutate_at(vars(contains("kr")),
-                  .funs = funs(v = . - allsp_Current))
-
-saveRDS(df_sums_rl, file = paste0(path, "df_sums_rl.RDS"))
-write.table(df_sums_rl, file = paste0(path, "df_sums_rl.csv"),
-            sep = ";", dec = ",")
-remove(df_sums_rl)
-```
-
-Model selection: Select only species with ensemble AUC >= 0.7 & Weighted species according RL status
-
-```{r weight RL status & auc, eval=FALSE, include=FALSE}
-df_sums_rl_auc <- df_probs %>%
-  filter(sp_n %in% sp_sel) %>%
-  dplyr::group_by(utmID, projname) %>%
-  dplyr::summarise(probsum = sum(probs * RLweging, na.rm = TRUE) / 1000) %>%
-  spread(key = projname, value = probsum) %>%
-  mutate_at(vars(contains("kr")),
-                  .funs = funs(v = . - allsp_Current))
-
-saveRDS(df_sums_rl_auc, file = paste0(path, "df_sums_rl_auc.RDS"))
-write.table(df_sums_rl_auc, file = paste0(path, "df_sums_rl_auc.csv"),
-            sep = ";", dec = ",")
-```
-
 

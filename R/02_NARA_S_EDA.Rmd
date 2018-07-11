@@ -29,7 +29,7 @@ nb_spec <- df_plant %>%
   n_distinct()
 ```
 
-'r nb_spec'
+`r nb_spec`
 
 ## Total number of distinct utmID grids with at least 100 plant species
 
@@ -39,7 +39,7 @@ nb_utm <- df_plant %>%
   n_distinct()
 ```
 
-'nb_utm'
+`r nb_utm`
 
 ## List of species codes and full names
 ```{r speccodes}
@@ -86,10 +86,10 @@ speclist <- df_plant %>%
 
 # temporary reduction of species for testing!!!!
 set.seed(32)
-speclist <- sample(x = speclist, size = 20, replace = FALSE)
+speclist <- sample(x = speclist, size = 10, replace = FALSE)
 ```
 
-A total of 'r count(speclist)' species.
+A total of `r length(speclist)` species.
 
 # Ligging van de goed geobserveerde utm grids (minstens 100 soorten)
 
