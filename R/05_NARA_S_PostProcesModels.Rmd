@@ -111,14 +111,10 @@ if (calcvarimp == TRUE) {
     pandoc.table()
 
   saveRDS(vi, file = paste0(path, "vi.RDS"))
-}
-```
 
-variable importance saved as 'vi.rds'
-
-```{r vimean}
-vi %>%
+  vi %>%
   filter(grepl("ROC", EMmodel)) %>%
   ggplot(aes(x = Varname, y = vi)) + geom_boxplot()
+}  
 ```
 

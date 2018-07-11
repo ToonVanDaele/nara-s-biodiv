@@ -34,7 +34,7 @@ df_sums <- df_probs %>%
   dplyr::summarise(probsum = sum(probs) / 1000) %>%
   spread(key = projname, value = probsum) %>%
   mutate_at(vars(contains("kr")),
-                  .funs = funs(v = . - allsp_Current))
+                  .funs = funs(v = . - kappa_Current))
 
 saveRDS(df_sums, file = paste0(path, "df_sums.RDS"))
 write.table(df_sums, file = paste0(path, "df_sums.csv"),
@@ -56,7 +56,7 @@ df_sums_auc <- df_probs %>%
   dplyr::summarise(probsum = sum(probs) / 1000) %>%
   spread(key = projname, value = probsum) %>%
   mutate_at(vars(contains("kr")),
-                  .funs = funs(v = . - allsp_Current))
+                  .funs = funs(v = . - kappa_Current))
 
 saveRDS(df_sums_auc, file = paste0(path, "df_sums_auc.RDS"))
 write.table(df_sums_auc, file = paste0(path, "df_sums_auc.csv"),
@@ -66,7 +66,7 @@ remove(df_sums_auc)
 
 Weighted species according RL status
 
-```{r weight RL status}
+```{r weight RL status, eval=FALSE, include=FALSE}
 df_redlist <- df_redlist %>%
   select(sp_n, RLweging) %>%
   filter(!is.na(RLweging))
@@ -89,7 +89,7 @@ remove(df_sums_rl)
 
 Model selection: Select only species with ensemble AUC >= 0.7 & Weighted species according RL status
 
-```{r weight RL status & auc}
+```{r weight RL status & auc, eval=FALSE, include=FALSE}
 df_sums_rl_auc <- df_probs %>%
   filter(sp_n %in% sp_sel) %>%
   dplyr::group_by(utmID, projname) %>%
@@ -102,3 +102,5 @@ saveRDS(df_sums_rl_auc, file = paste0(path, "df_sums_rl_auc.RDS"))
 write.table(df_sums_rl_auc, file = paste0(path, "df_sums_rl_auc.csv"),
             sep = ";", dec = ",")
 ```
+
+

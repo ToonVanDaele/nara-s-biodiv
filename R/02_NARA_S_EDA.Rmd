@@ -16,6 +16,7 @@ source("11_NARA_S_Functions.R")
 ```{r load_data}
 df_plant <- readRDS("../data/data-in/df_plant.RDS")
 df_expl <- readRDS("../data/data-in/df_expl.RDS")
+df_ecoreg <- readRDS("../data/data-in/df_ecoreg.RDS")
 ```
 
 # Data exploration of plant data
@@ -50,10 +51,16 @@ head(species)
 
 # Selection of grids with at least 70% of 1x1km
 
+(Except for grids along the coast line and along river Meuse)
+
 ```{r selectutm}
 pgrid <- df_expl %>%
   filter(scen == "Current" & varname == "Opp_m2") %>%
-  mutate(opp_ok = ifelse(value > 700000, 1, 0))
+  left_join(y = df_ecoreg %>%
+              filter(regio == "Ecoregio van de grindrivieren" |
+                     regio == "Ecoregio van de kustduinen"),
+            by = "utmID") %>%
+  mutate(opp_ok = ifelse(value > 700000 | !is.na(regio) , 1, 0))
 
 ggplot(pgrid, aes(x = X, y = Y, colour = factor(opp_ok))) +
   geom_point(size = 0.05) + coord_fixed()
@@ -74,8 +81,12 @@ Species in at least 100 locations and in less than 95% of the locations
 speclist <- df_plant %>%
   group_by(Taxoncode) %>%
   count() %>%
-  filter(n >= 100 & n <= 0.95 * nb_utm) %>%
+  filter(n >= 100 & n <= 0.90 * nb_utm) %>%
   pull(Taxoncode)
+
+# temporary reduction of species for testing!!!!
+set.seed(32)
+speclist <- sample(x = speclist, size = 20, replace = FALSE)
 ```
 
 A total of 'r count(speclist)' species.
@@ -90,9 +101,11 @@ spr_plant <- df_plant %>%
   spread(key = Taxoncode, value = present) %>%
   tbl_df()
 
-spr_plant <- inner_join(x = select(a, utmID, X, Y),
-                        y = spr_plant,
-                        by = "utmID")
+spr_plant <- left_join(x = spr_plant,
+                       y = df_expl %>%
+                            filter(scen == "Current") %>%
+                            distinct(utmID, X, Y),
+                       by = "utmID")
 
 ggplot(spr_plant, aes(x = X, y = Y)) + geom_point(size = 1) + coord_fixed()
 ```
@@ -439,16 +452,14 @@ df_expl %>%
 df_expl <-  filter(df_expl, !varname == "potnattrofie")
 ```
 
-# Selectie van de (mogelijk) relevante verklarende variabelen per soort
-
-- Maximaal aantal variabelen = min(presences & absences) / 10
-- Minstens 20% van waarden > 0 (voor landgebruiksklassen)
-- VIF <- 5
-
-Aantal variabelen per species
+# Selectie van alle variabelen voor alle soorten
 
 ```{r selectvars}
-gvar <- map_dfr(colnames(spr_plant[-c(1:3)]), getexplvar,
+species <- spr_plant %>%
+  select(-utmID, -X, -Y) %>%
+  colnames()
+
+gvar <- map_dfr(species, getexplvar,
              spr_plant = spr_plant,
              df_expl = df_expl)
 
@@ -459,60 +470,15 @@ gvar %>%
 
 # Filter op basis minimaal 5 distincte waarden
 
-explvar1 <- gvar %>%
+explspec <- gvar %>%
  filter(distinct > 5)
 
-explvar1 %>%
-  group_by(varname) %>%
-  count() %>%
-  pandoc.table()
-```
-
-# Verdere selectie op basis van VIF
-
-```{r VIF}
-speclist <- unique(explvar1$sp_n)
-
-dfvif <- map_dfr(speclist, vif_select, explvar1, spr_plant, df_expl)
-
-dfvif %>%
-  group_by(varname) %>%
-  summarize(meanVIF = mean(VIF),
-            medianVIF = median(VIF),
-            maxVIF = max(VIF),
-            minVIF = min(VIF))
-```
-
-
-```{r selectvar, results='asis'}
-explspec <- inner_join(x = explvar1,
-                      y = dfvif,
-                      by = c("sp_n", "varname"))
-
 explspec %>%
-  group_by(sp_n) %>%
-  summarise(maxnbvar = first(maxnbvar),
-            nbvars = n()) %>%
-  mutate(ok = ifelse(maxnbvar < nbvars, "TRUE", "FALSE"))
-
-dfvif %>%
-  group_by(sp_n) %>%
-  count() %>%
-  ungroup %>%
-  summarise(min = min(n),
-            median = median(n),
-            max = max(n)) %>%
-  pandoc.table()
-```
-
-Meest gekozen variabelen
-
-```{r varlist, results='asis'}
-dfvif %>%
   group_by(varname) %>%
   count() %>%
   pandoc.table()
 ```
+
 
 # Normalize explanatory variables
 

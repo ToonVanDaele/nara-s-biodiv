@@ -25,7 +25,7 @@ Biomod_modeling <- function(sp_n,
   my_biomodoption <- BIOMOD_ModelingOptions(
     GAM = list(algo = "GAM_mgcv",
                myFormula = gam_formula(sp_n, names(my_expl)),
-               k = 4,
+               k = -1,
                method = "GCV.Cp",
                select = TRUE,
                knots = NULL,
@@ -36,14 +36,14 @@ Biomod_modeling <- function(sp_n,
     my_biomod_data,
     models = c("GAM"),
     models.options = my_biomodoption,
-    NbRunEval = 10,   # Only for testing. Needs higher number
+    NbRunEval = 10,
     DataSplit = 70,
-    Yweights = NULL,
+    Prevalence = 0.5,
     VarImport = 0,
-    models.eval.meth = c("TSS", "ROC"),
+    models.eval.meth = c("TSS", "ROC", "KAPPA"),
     SaveObj = TRUE,
     rescal.all.models = TRUE,
-    do.full.models = FALSE,      #Default is TRUE
+    do.full.models = FALSE,
     modeling.id = model_name)
 
   #my_biomodmodel_out
@@ -52,9 +52,9 @@ Biomod_modeling <- function(sp_n,
   my_biomod_em <- BIOMOD_EnsembleModeling(modeling.output = my_biomodmodel_out,
                            chosen.models = "all",
                            em.by = "all",
-                           eval.metric = "ROC",
+                           eval.metric = NULL,
                            eval.metric.quality.threshold = NULL,
-                           models.eval.meth = c("ROC"),
+                           models.eval.meth = c("TSS", "ROC", "KAPPA"),
                            prob.mean = TRUE,
                            prob.cv = FALSE,
                            prob.ci = FALSE,
@@ -62,8 +62,7 @@ Biomod_modeling <- function(sp_n,
                            prob.median = FALSE,
                            committee.averaging = FALSE,
                            prob.mean.weight = FALSE,
-                           prob.mean.weight.decay = "proportional",
-                           VarImport = 5)
+                           VarImport = 1)
 
   return("ok")
 }
@@ -91,7 +90,7 @@ biomod_projection <- function(sp_n,
     proj.name = proj_name,
     xy.new.env = my_proj_xy,
     selected.models = "all",
-    binary.meth = "ROC",
+    binary.meth = "KAPPA",
     filtered.meth = NULL,
     compress = "xz",
     build.clamping.mask = TRUE,
@@ -107,7 +106,7 @@ biomod_projection <- function(sp_n,
                                 xy.new.env = NULL,
                                 selected.models = "all",
                                 proj.name = NULL,
-                                binary.meth = "ROC",
+                                binary.meth = "KAPPA",
                                 filtered.meth = NULL,
                                 compress = TRUE)
 

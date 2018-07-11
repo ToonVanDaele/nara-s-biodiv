@@ -1,13 +1,13 @@
 # Main script running R and markdown scripts
 
-modelname <- "test3"
+modelname <- "kappa"
 pathout = paste0("../data/data-out/", modelname)
 
 # 1 Load data
 source("01_NARA_S_LoadData.R")
 
 # 2 EDA
-rmarkdown::render("02_NARA_S_EDA.Rmd", output_dir = "../data/data-in/")
+rmarkdown::render("02_NARA_S_EDA.Rmd", output_dir = "../data/data-in")
 
 # 3 Preprocessing
 rmarkdown::render("03_NARA_S_PreProcessing.Rmd", output_dir = pathout,

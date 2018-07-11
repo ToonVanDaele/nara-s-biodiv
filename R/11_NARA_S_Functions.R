@@ -8,10 +8,13 @@
 #------------------------------------------------------------------------
 getprobs <- function(sp_n, scenario, projname, df_proj_in){
 
+  cat(sp_n, " - ", scenario, " - ", projname, "\n")
+
   # load ensemble mean probability projection
   file.name <- paste0("../data/models/", sp_n, "/proj_", projname, "/proj_",
                       projname, "_", sp_n, "_ensemble.RData")
 
+  cat(file.name, "\n")
   proj.prob <- loadrdata(file.name)
 
   probs <- as.vector(proj.prob[, 1]) # Get the mean ensemble probability
@@ -19,7 +22,7 @@ getprobs <- function(sp_n, scenario, projname, df_proj_in){
 
   #load ensemble binary projection
   file.name <- paste0("../data/models/", sp_n, "/proj_", projname, "/proj_",
-                      projname, "_", sp_n, "_ensemble_ROCbin.RData")
+                      projname, "_", sp_n, "_ensemble_KAPPAbin.RData")
 
   proj.bin <- loadrdata(file.name)
   bins <- as.vector(proj.bin) # Get the mean binary output of the ensemble
@@ -266,7 +269,7 @@ getexplvar <- function(sp_n, spr_plant, df_expl) {
 
 gam_formula <- function(spname, varnames) {
 
-  varcs <- paste0("s(", varnames, ", k = 3, bs='cs')")
+  varcs <- paste0("s(", varnames, ", k = 4, bs='cs')")
 
   fromstr <- paste0(spname, " ~ 1 +",
                     paste(varcs, collapse = " + "))
