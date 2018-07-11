@@ -19,7 +19,7 @@ projectbiomod <- function(modelname = "test"){
 
   cat("Start - ", date(), "\n",
       "model directory: ", modeldir, "\n",
-      "Modelname: ", modelname)
+      "Modelname: ", modelname, "\n")
 
   #---------------------------------------------------------------------------
   # Load data
@@ -44,6 +44,7 @@ projectbiomod <- function(modelname = "test"){
   # The projections are stored on hard disk in the working directory
   #---------------------------------------------------------------------------
 
+  origdir <- getwd()
   setwd(modeldir)
 
   pwalk(.l = projs, .f = function(proj, sp.n, modelname){
@@ -59,14 +60,15 @@ projectbiomod <- function(modelname = "test"){
 
     sink("Out_proj.txt", append = TRUE)
 
-    project.return <- biomod_projection(sp.n = sp.n,
-                                   model.name = modelname,
-                                   my.proj = projdata[, explvar],
-                                   my.proj.xy = projdata[, c("X", "Y")],
-                                   proj.name = paste0(modelname, "_", proj))
+    project.return <- biomod_projection(sp_n = sp.n,
+                                   model_name = modelname,
+                                   my_proj = projdata[, explvar],
+                                   my_proj_xy = projdata[, c("X", "Y")],
+                                   proj_name = paste0(modelname, "_", proj))
     sink()
 
     })
 
     cat(date())
+    setwd(origdir)
 }

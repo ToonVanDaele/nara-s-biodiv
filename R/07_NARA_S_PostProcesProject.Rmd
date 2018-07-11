@@ -4,7 +4,7 @@ author: "Toon Van Daele"
 date: "`r Sys.Date()`s"
 output: html_document
 params:
-  modelname: "none"
+  modelname: "kappa"
 ---
 
 ```{r setup, include=FALSE}
@@ -31,7 +31,7 @@ dbDisconnect(db)
 
 ```{r get probabilities}
 projs <- expand.grid(sp_n = speclist$species,
-                     scen = unique(df_proj_in$scen),
+                     scenario = unique(df_proj_in$scen),
                      stringsAsFactors = FALSE)
 projs$projname <- paste0(modelname, "_", projs$scen)
 
@@ -59,7 +59,7 @@ sumplots <- df_sums %>%
   map(., plotsum, path)
 
 saveRDS(df_sums, file = paste0(path, "df_sums.RDS"))
-write.csv()
+write.csv(df_sums, file = paste0(path, "df_sums.csv"))
 ```
 
 ## Individual plots for each species (Current scenario only)

@@ -62,7 +62,7 @@ Biomod_modeling <- function(sp_n,
                            prob.median = FALSE,
                            committee.averaging = FALSE,
                            prob.mean.weight = FALSE,
-                           VarImport = 5)
+                           VarImport = 1)
 
   return("ok")
 }

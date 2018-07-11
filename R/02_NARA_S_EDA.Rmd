@@ -459,10 +459,24 @@ species <- spr_plant %>%
   select(-utmID, -X, -Y) %>%
   colnames()
 
-expl_var <- unique(df_expl$varname)
-expl_var <- expl_var[-1]
+gvar <- map_dfr(species, getexplvar,
+             spr_plant = spr_plant,
+             df_expl = df_expl)
 
-explspec <- expand.grid(sp_n = species, varname = expl_var)
+gvar %>%
+  group_by(varname) %>%
+  count() %>%
+  pandoc.table()
+
+# Filter op basis minimaal 5 distincte waarden
+
+explspec <- gvar %>%
+ filter(distinct > 5)
+
+explspec %>%
+  group_by(varname) %>%
+  count() %>%
+  pandoc.table()
 ```
 
 

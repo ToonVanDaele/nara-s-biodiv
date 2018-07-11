@@ -48,6 +48,7 @@ procesbiomod <- function(modelname = "test") {
     print("No models to run - check modelname")
     }
 
+  origdir <- getwd()
   setwd(modeldir)
 
   walk2(.x = my.spec, .y = modelname, .f = function(sp.n, modelname){
@@ -61,7 +62,7 @@ procesbiomod <- function(modelname = "test") {
       pull() %>%
       intersect(colnames(df_data_in))
 
-    sink("Out.txt", append = TRUE)
+   # sink("Out.txt", append = TRUE)
     model.return <- Biomod_modeling(sp_n = sp.n,
                                    model_name = modelname,
                                    my_resp = my.resp,
@@ -76,4 +77,5 @@ procesbiomod <- function(modelname = "test") {
 
     dbDisconnect(db)
     cat(date())
+    setwd(origdir)
 }
