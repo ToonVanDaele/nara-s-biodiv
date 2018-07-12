@@ -17,6 +17,7 @@ source("11_NARA_S_Functions.R")
 df_plant <- readRDS("../data/data-in/df_plant.RDS")
 df_expl <- readRDS("../data/data-in/df_expl.RDS")
 df_ecoreg <- readRDS("../data/data-in/df_ecoreg.RDS")
+df_redlist <- readRDS("../data/data-in/df_redlist.RDS")
 ```
 
 # Data exploration of plant data
@@ -35,7 +36,7 @@ nb_spec <- df_plant %>%
 
 ```{r nb_utmgrids}
 nb_utm <- df_plant %>%
-  select(utmID) %>%
+  dplyr::select(utmID) %>%
   n_distinct()
 ```
 
@@ -75,18 +76,18 @@ df_plant <- filter(df_plant, utmID %in% utmok)
 
 # Selection of plant species
 
-Species in at least 100 locations and in less than 95% of the locations
-
 ```{r selecttaxon}
 speclist <- df_plant %>%
   group_by(Taxoncode) %>%
   count() %>%
-  filter(n >= 100 & n <= 0.90 * nb_utm) %>%
+  filter(n >= 30 & n <= 0.80 * nb_utm) %>%
   pull(Taxoncode)
 
-# temporary reduction of species for testing!!!!
-set.seed(32)
-speclist <- sample(x = speclist, size = 10, replace = FALSE)
+temp <- df_redlist %>%
+  filter(!is.na(RLweging)) %>%
+  pull(Soortcode)
+
+speclist <- speclist[speclist %in% temp]
 ```
 
 A total of `r length(speclist)` species.
@@ -452,7 +453,7 @@ df_expl %>%
 df_expl <-  filter(df_expl, !varname == "potnattrofie")
 ```
 
-# Selectie van alle variabelen voor alle soorten
+# Selectie van variabelen per soort
 
 ```{r selectvars}
 species <- spr_plant %>%

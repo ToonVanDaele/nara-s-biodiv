@@ -33,7 +33,7 @@ df_sums <- df_probs %>%
                   .funs = funs(v = . - get(paste0(modelname, "_Current"))))
 
 saveRDS(df_sums, file = paste0(path, "df_sums.RDS"))
-write.table(df_sums, file = paste0(path, "df_sums.csv"),
+write.table(df_sums, file = paste0(path, "df_sums.txt"),
             quote = FALSE, sep = ";", dec = ",", row.names = FALSE)
 remove(df_sums)
 ```

@@ -128,6 +128,10 @@ df_expl <- left_join(df_expl,
 ##### Load red list species
 df_redlist <- read.csv(file = paste0(path, "RL_planten.csv"), sep = ";")
 
+df_redlist$Soortcode <- gsub("_", ".", df_redlist$Soortcode)
+df_redlist$Soortcode <- gsub("-", ".", df_redlist$Soortcode)
+
+
 #### load ecoregions utmID
 df_ecoreg <- foreign::read.dbf(file = paste0(path, "ifblecoregio.dbf"),
                               as.is = TRUE)

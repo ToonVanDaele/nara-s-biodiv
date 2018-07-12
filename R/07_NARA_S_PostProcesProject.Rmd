@@ -4,7 +4,7 @@ author: "Toon Van Daele"
 date: "`r Sys.Date()`s"
 output: html_document
 params:
-  modelname: "kappa"
+  modelname: "algo"
 ---
 
 ```{r setup, include=FALSE}
@@ -50,7 +50,7 @@ df_sums <- df_probs %>%
 
 df_idxy <- df_proj_in %>%
   filter(scen == "Current") %>%
-  select(utmID, X, Y)
+  dplyr::select(utmID, X, Y)
 
 df_sums <- left_join(df_sums, df_idxy, by = "utmID")
 
