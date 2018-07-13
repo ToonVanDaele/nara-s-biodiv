@@ -4,12 +4,13 @@ author: "Toon Van Daele"
 date: "28 februari 2018"
 output: html_document
 params:
-  modelname: "none"
+  modelname: "rlw"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(pander)
 modelname <- params$modelname #"allsp"
 path <- paste0("../data/data-out/", modelname, "/")
 ```
@@ -17,48 +18,176 @@ path <- paste0("../data/data-out/", modelname, "/")
 Generating output for NARA_S of model: **`r modelname`**
 
 ```{r loaddata}
-df_probs <- readRDS(file = paste0(path, "df_probs.RDS"))
-df_meval <- readRDS(file = paste0(path, "df_meval.RDS"))
-df_redlist <- readRDS(file = paste0(path, "df_redlist.RDS"))
+df_probs <- readRDS(paste0(path, "df_probs.RDS"))
+speclist <- readRDS(paste0(path, "speclist.RDS"))
 ```
 
-All species and all models
+Selection of models with AUC >= 0.7
 
-```{r all_species}
-df_sums <- df_probs %>%
-  dplyr::group_by(utmID, projname) %>%
-  dplyr::summarise(probsum = sum(probs) / 1000) %>%
-  spread(key = projname, value = probsum) %>%
-  mutate_at(vars(contains("kr")),
-                  .funs = funs(v = . - get(paste0(modelname, "_Current"))))
+```{r selecteval}
+df_meval <- readRDS(paste0(path, "df_meval.RDS"))
 
-saveRDS(df_sums, file = paste0(path, "df_sums.RDS"))
-write.table(df_sums, file = paste0(path, "df_sums.txt"),
-            quote = FALSE, sep = ";", dec = ",", row.names = FALSE)
-remove(df_sums)
-```
-
-Model selection: Select only species with ensemble AUC >= 0.7
-
-```{r selection auc}
 sp_sel <- df_meval %>%
-  filter(Eval.metric == "ROC") %>%
-  group_by(sp_n) %>%
-  summarise(medianROC = mean(median)) %>%
-  filter(medianROC >= 0.7) %>%
+  filter(Eval.metric == "ROC", mean >= 0.7) %>%
   pull(sp_n)
+remove(df_meval)
 
-df_sums_auc <- df_probs %>%
-  filter(sp_n %in% sp_sel) %>%
-  dplyr::group_by(utmID, projname) %>%
-  dplyr::summarise(probsum = sum(probs) / 1000) %>%
+df_probs <- filter(df_probs, sp_n %in% sp_sel)
+```
+
+Get utm xy coordinates
+
+```{r getxy}
+df_proj_in <- readRDS(paste0(path, "df_proj_in.RDS"))
+utmIDxy <- df_proj_in %>%
+  filter(scen == "Current") %>%
+  dplyr::select(utmID, X, Y)
+remove(df_proj_in)
+```
+
+Calculate prevalence
+
+```{r calcprevalence}
+df_data_in <- readRDS(file = paste0(path, "df_data_in.RDS"))
+nbutm <- nrow(df_data_in)
+
+df_prev <- df_data_in %>%
+  dplyr::select(speclist) %>%
+  gather(key = sp_n, value = presence) %>%
+  group_by(sp_n) %>%
+  summarize(prevalence = sum(presence, na.rm = TRUE) / nbutm) %>%
+  arrange(desc(prevalence))
+
+df_prev <- df_prev %>%
+  mutate(ranksp = row_number() / nrow(df_prev)) %>%
+  mutate(exp = (1000000^(1 - prevalence)) / 1000000)
+remove(df_data_in)
+
+ggplot(df_prev, aes(x = prevalence)) + geom_histogram()
+
+df_prev %>%
+  gather(key = type, value = weight, -sp_n, -prevalence ) %>%
+  ggplot(aes(x = prevalence, y = weight)) + geom_jitter() +
+  facet_wrap(~type)
+```
+
+Get redlist weights
+
+```{r redlistweights}
+df_redlist <- readRDS(paste0(path, "df_redlist.RDS"))
+
+df_redlist <- filter(df_redlist, !is.na(RLweging))
+
+df_prev <- inner_join(x = df_prev,
+                      y = df_redlist %>%
+                         dplyr::select(Soortcode, RLweging),
+                      by = c("sp_n" = "Soortcode"))
+remove(df_redlist)
+```
+
+join 'prev' and 'redlist' to probs
+
+```{r jointoprobs}
+df_probs <- df_probs %>%
+  left_join(df_prev,
+            by = "sp_n")
+```
+
+
+Calculate sums per utmgrid and differences between scenarios
+
+```{r calcsums}
+df_sum <- df_probs %>%
+  group_by(utmID, projname) %>%
+  summarise(probsum = sum(probs) / 1000,
+            binsum = sum(bins),
+            probsumw = sum(probs * ranksp) / 1000,
+            binsumw = sum(bins * ranksp))
+```
+
+Results: 'sum of probabilities'
+
+```{r}
+df_probsum <- df_sum %>%
+  select(utmID, projname, probsum) %>%
   spread(key = projname, value = probsum) %>%
   mutate_at(vars(contains("kr")),
-                  .funs = funs(v = . - get(paste0(modelname, "_Current"))))
+                  .funs = funs(v = . - get(paste0(modelname, "_Current")))) %>%
+  left_join(utmIDxy, by = "utmID")
 
-saveRDS(df_sums_auc, file = paste0(path, "df_sums_auc.RDS"))
-write.table(df_sums_auc, file = paste0(path, "df_sums_auc.csv"),
+ggplot(df_probsum, aes(x = X, y = Y, colour = rlw_Current)) +
+  scale_colour_gradientn(colours = rainbow(3)) +
+  geom_point() + coord_fixed()
+
+saveRDS(df_probsum, file = paste0(path, "df_probsum.RDS"))
+write.table(df_probsum, file = paste0(path, "df_probsum.txt"),
             quote = FALSE, sep = ";", dec = ",", row.names = FALSE)
-remove(df_sums_auc)
+
+summary(df_probsum[-c(1, 11, 12)])
 ```
+
+Results: 'sum of binaries'
+
+```{r}
+df_binsum <- df_sum %>%
+  select(utmID, projname, binsum) %>%
+  spread(key = projname, value = binsum) %>%
+  mutate_at(vars(contains("kr")),
+                  .funs = funs(v = . - get(paste0(modelname, "_Current")))) %>%
+  left_join(utmIDxy, by = "utmID")
+
+ggplot(df_binsum, aes(x = X, y = Y, colour = rlw_Current)) +
+  scale_colour_gradientn(colours = rainbow(3)) +
+  geom_point() + coord_fixed()
+
+saveRDS(df_binsum, file = paste0(path, "df_binsum.RDS"))
+write.table(df_binsum, file = paste0(path, "df_binsum.txt"),
+            quote = FALSE, sep = ";", dec = ",", row.names = FALSE)
+
+summary(df_binsum[-c(1, 11, 12)])
+```
+
+Results: 'weighted (ranks) sum of probabilities'
+
+```{r}
+df_probsumw <- df_sum %>%
+  select(utmID, projname, probsumw) %>%
+  spread(key = projname, value = probsumw) %>%
+  mutate_at(vars(contains("kr")),
+                  .funs = funs(v = . - get(paste0(modelname, "_Current")))) %>%
+  left_join(utmIDxy, by = "utmID")
+
+ggplot(df_probsumw, aes(x = X, y = Y, colour = rlw_Current)) +
+  scale_colour_gradientn(colours = rainbow(3)) +
+  geom_point() + coord_fixed()
+
+saveRDS(df_probsumw, file = paste0(path, "df_probsumw.RDS"))
+write.table(df_probsumw, file = paste0(path, "df_probsumw.txt"),
+            quote = FALSE, sep = ";", dec = ",", row.names = FALSE)
+
+summary(df_probsumw[-c(1, 11, 12)])
+```
+
+
+Results: 'weighted (ranks) sum of binaries'
+
+```{r}
+df_binsumw <- df_sum %>%
+  select(utmID, projname, binsumw) %>%
+  spread(key = projname, value = binsumw) %>%
+  mutate_at(vars(contains("kr")),
+                  .funs = funs(v = . - get(paste0(modelname, "_Current")))) %>%
+  left_join(utmIDxy, by = "utmID")
+
+ggplot(df_binsumw, aes(x = X, y = Y, colour = rlw_Current)) +
+  scale_colour_gradientn(colours = rainbow(3)) +
+  geom_point() + coord_fixed()
+
+saveRDS(df_binsumw, file = paste0(path, "df_binsumw.RDS"))
+write.table(df_binsumw, file = paste0(path, "df_binsumw.txt"),
+            quote = FALSE, sep = ";", dec = ",", row.names = FALSE)
+
+summary(df_binsumw[-c(1, 11, 12)])
+```
+
 

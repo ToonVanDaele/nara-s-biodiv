@@ -4,7 +4,7 @@ author: "Toon Van Daele"
 date: "`r Sys.Date()`"
 output: html_document
 params:
-  modelname: "none"
+  modelname: "rlw"
   calcvarimp : FALSE
 ---
 
@@ -48,32 +48,39 @@ df_eval$algo <- sub( "_RUN.*_PA*.", "", df_eval$Model.name)
 saveRDS(df_eval, file = paste0(path, "df_eval.RDS"))
 ```
 
-# Calculate the median ROC and TSS evaluations
+# Calculate the mean ROC, TSS and Kappa evaluation scores
 
 ```{r calceval}
 df_meval <- df_eval %>%
   dplyr::group_by(sp_n, algo, Eval.metric) %>%
-  dplyr::summarise(median = median(Testing.data))
+  dplyr::summarise(mean = mean(Testing.data))
   
 saveRDS(df_meval, file = paste0(path, "df_meval.RDS"))
 ```
 
-# median AUC
+# mean evaluation score
 
-```{r medianAUC, results='asis'}
+```{r meanAUC, results='asis'}
 df_meval %>%
   unite(algo_metric, algo, Eval.metric, sep = "_") %>%
-  spread(key = algo_metric, value = median) %>%
+  spread(key = algo_metric, value = mean) %>%
   pandoc.table()
 ```
 
-# Overal median AUC
+# Overal mean evaluation score
 
-```{r overalmedianAUC, results='asis'}
+```{r overalmeanAUC, results='asis'}
 df_meval %>%
   group_by(Eval.metric, algo) %>%
-  summarise(medianScore = median(median)) %>%
+  summarise(meanScore = mean(mean, na.rm = TRUE)) %>%
   pandoc.table()
+```
+
+```{r speclistok}
+speclist <- df_meval %>%
+    filter(Eval.metric == "ROC", mean > 0.65) %>%
+    pull(sp_n)
+saveRDS(speclist, file = paste0(path, "speclist.RDS"))
 ```
 
 ### Create repsonse curves

@@ -62,7 +62,7 @@ procesbiomod <- function(modelname = "test") {
       pull() %>%
       intersect(colnames(df_data_in))
 
-   # sink("Out.txt", append = TRUE)
+   sink("Out.txt", append = TRUE)
     model.return <- Biomod_modeling(sp_n = sp.n,
                                    model_name = modelname,
                                    my_resp = my.resp,
