@@ -78,7 +78,7 @@ df_redlist <- readRDS(paste0(path, "df_redlist.RDS"))
 
 df_redlist <- filter(df_redlist, !is.na(RLweging))
 
-df_prev <- inner_join(x = df_prev,
+df_prev <- left_join(x = df_prev,
                       y = df_redlist %>%
                          dplyr::select(Soortcode, RLweging),
                       by = c("sp_n" = "Soortcode"))
@@ -93,7 +93,6 @@ df_probs <- df_probs %>%
             by = "sp_n")
 ```
 
-
 Calculate sums per utmgrid and differences between scenarios
 
 ```{r calcsums}
@@ -102,7 +101,10 @@ df_sum <- df_probs %>%
   summarise(probsum = sum(probs) / 1000,
             binsum = sum(bins),
             probsumw = sum(probs * ranksp) / 1000,
-            binsumw = sum(bins * ranksp))
+            binsumw = sum(bins * ranksp),
+            binsumrl = sum(bins * ifelse(RLweging > 0, 1, 0)),
+            binsumrlw = sum(bins * RLweging))
+saveRDS(df_sum, file = paste0(path, "df_sum.RDS"))
 ```
 
 Results: 'sum of probabilities'
@@ -115,9 +117,10 @@ df_probsum <- df_sum %>%
                   .funs = funs(v = . - get(paste0(modelname, "_Current")))) %>%
   left_join(utmIDxy, by = "utmID")
 
-ggplot(df_probsum, aes(x = X, y = Y, colour = rlw_Current)) +
+(p <- ggplot(df_probsum, aes(x = X, y = Y, colour = rlw_Current)) +
   scale_colour_gradientn(colours = rainbow(3)) +
-  geom_point() + coord_fixed()
+  geom_point() + coord_fixed())
+ggsave(paste0(path, "probsum.png"), p)
 
 saveRDS(df_probsum, file = paste0(path, "df_probsum.RDS"))
 write.table(df_probsum, file = paste0(path, "df_probsum.txt"),
@@ -136,9 +139,10 @@ df_binsum <- df_sum %>%
                   .funs = funs(v = . - get(paste0(modelname, "_Current")))) %>%
   left_join(utmIDxy, by = "utmID")
 
-ggplot(df_binsum, aes(x = X, y = Y, colour = rlw_Current)) +
+(p <- ggplot(df_binsum, aes(x = X, y = Y, colour = rlw_Current)) +
   scale_colour_gradientn(colours = rainbow(3)) +
-  geom_point() + coord_fixed()
+  geom_point() + coord_fixed())
+ggsave(paste0(path, "binsum.png"), p)
 
 saveRDS(df_binsum, file = paste0(path, "df_binsum.RDS"))
 write.table(df_binsum, file = paste0(path, "df_binsum.txt"),
@@ -157,9 +161,10 @@ df_probsumw <- df_sum %>%
                   .funs = funs(v = . - get(paste0(modelname, "_Current")))) %>%
   left_join(utmIDxy, by = "utmID")
 
-ggplot(df_probsumw, aes(x = X, y = Y, colour = rlw_Current)) +
+(p <- ggplot(df_probsumw, aes(x = X, y = Y, colour = rlw_Current)) +
   scale_colour_gradientn(colours = rainbow(3)) +
-  geom_point() + coord_fixed()
+  geom_point() + coord_fixed())
+ggsave(paste0(path, "probsumw.png"), p)
 
 saveRDS(df_probsumw, file = paste0(path, "df_probsumw.RDS"))
 write.table(df_probsumw, file = paste0(path, "df_probsumw.txt"),
@@ -179,15 +184,62 @@ df_binsumw <- df_sum %>%
                   .funs = funs(v = . - get(paste0(modelname, "_Current")))) %>%
   left_join(utmIDxy, by = "utmID")
 
-ggplot(df_binsumw, aes(x = X, y = Y, colour = rlw_Current)) +
+(p <- ggplot(df_binsumw, aes(x = X, y = Y, colour = rlw_Current)) +
   scale_colour_gradientn(colours = rainbow(3)) +
-  geom_point() + coord_fixed()
+  geom_point() + coord_fixed())
+ggsave(paste0(path, "binsumw.png"), p)
 
 saveRDS(df_binsumw, file = paste0(path, "df_binsumw.RDS"))
 write.table(df_binsumw, file = paste0(path, "df_binsumw.txt"),
             quote = FALSE, sep = ";", dec = ",", row.names = FALSE)
 
 summary(df_binsumw[-c(1, 11, 12)])
+```
+
+
+Results: 'redlist weight > 0 sum of binaries'
+
+```{r}
+df_binsumrl <- df_sum %>%
+  select(utmID, projname, binsumrl) %>%
+  spread(key = projname, value = binsumrl) %>%
+  mutate_at(vars(contains("kr")),
+                  .funs = funs(v = . - get(paste0(modelname, "_Current")))) %>%
+  left_join(utmIDxy, by = "utmID")
+
+(p <- ggplot(df_binsumrl, aes(x = X, y = Y, colour = rlw_Current)) +
+  scale_colour_gradientn(colours = rainbow(3)) +
+  geom_point() + coord_fixed())
+ggsave(paste0(path, "binsumrl.png"), p)
+
+saveRDS(df_binsumrl, file = paste0(path, "df_binsumrl.RDS"))
+write.table(df_binsumrl, file = paste0(path, "df_binsumrl.txt"),
+            quote = FALSE, sep = ";", dec = ",", row.names = FALSE)
+
+summary(df_binsumrl[-c(1, 11, 12)])
+```
+
+
+Results: 'weighted (redlist status) sum of binaries'
+
+```{r}
+df_binsumrlw <- df_sum %>%
+  select(utmID, projname, binsumrlw) %>%
+  spread(key = projname, value = binsumrlw) %>%
+  mutate_at(vars(contains("kr")),
+                  .funs = funs(v = . - get(paste0(modelname, "_Current")))) %>%
+  left_join(utmIDxy, by = "utmID")
+
+(p <- ggplot(df_binsumrlw, aes(x = X, y = Y, colour = rlw_Current)) +
+  scale_colour_gradientn(colours = rainbow(3)) +
+  geom_point() + coord_fixed())
+ggsave(paste0(path, "binsumrlw.png"), p)
+
+saveRDS(df_binsumrlw, file = paste0(path, "df_binsumrlw.RDS"))
+write.table(df_binsumrlw, file = paste0(path, "df_binsumrlw.txt"),
+            quote = FALSE, sep = ";", dec = ",", row.names = FALSE)
+
+summary(df_binsumrlw[-c(1, 11, 12)])
 ```
 
 

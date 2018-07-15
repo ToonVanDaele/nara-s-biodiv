@@ -88,6 +88,10 @@ temp <- df_redlist %>%
   pull(Soortcode)
 
 speclist <- speclist[speclist %in% temp]
+
+# for testing 
+speclist <- sample(speclist, 200)
+
 ```
 
 A total of `r length(speclist)` species.
@@ -527,7 +531,7 @@ ggsave("../data/data-in/specrich.png", p, dpi = 150)
 
 ## Save plots with calibration data (presences only)
 
-```{r species_plot}
+```{r species_plot, eval=FALSE, include=FALSE}
 mypath <- "../data/data-in/presences/"
 dir.create(mypath, showWarnings = FALSE)
 
