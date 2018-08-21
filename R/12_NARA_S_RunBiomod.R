@@ -29,7 +29,8 @@ Biomod_modeling <- function(sp_n,
                method = "GCV.Cp",
                select = TRUE,
                knots = NULL,
-               paramPen = NULL))
+               paramPen = NULL),
+    MAXENT.Phillips = list(path_to_maxent.jar = "c:/temp/maxent.jar"))
 
   # Modeling
   my_biomodmodel_out <- BIOMOD_Modeling(
@@ -38,7 +39,6 @@ Biomod_modeling <- function(sp_n,
     models.options = my_biomodoption,
     NbRunEval = 10,
     DataSplit = 70,
-    Prevalence = 0.5,
     VarImport = 0,
     models.eval.meth = c("TSS", "ROC", "KAPPA"),
     SaveObj = TRUE,
@@ -46,13 +46,11 @@ Biomod_modeling <- function(sp_n,
     do.full.models = FALSE,
     modeling.id = model_name)
 
-  #my_biomodmodel_out
-
   # Modeling ensemble
   my_biomod_em <- BIOMOD_EnsembleModeling(modeling.output = my_biomodmodel_out,
                            chosen.models = "all",
-                           em.by = "all",
-                           eval.metric = NULL,
+                           em.by = "PA_dataset",
+                           eval.metric = c("ROC"),
                            eval.metric.quality.threshold = NULL,
                            models.eval.meth = c("TSS", "ROC", "KAPPA"),
                            prob.mean = TRUE,
@@ -61,7 +59,8 @@ Biomod_modeling <- function(sp_n,
                            prob.ci.alpha = 0.05,
                            prob.median = FALSE,
                            committee.averaging = FALSE,
-                           prob.mean.weight = FALSE,
+                           prob.mean.weight = TRUE,
+                           prob.mean.weight.decay = 'proportional',
                            VarImport = 1)
 
   return("ok")

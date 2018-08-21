@@ -1,6 +1,6 @@
 # Main script running R and markdown scripts
 
-modelname <- "kappa"
+modelname <- "tprev"
 pathout = paste0("../data/data-out/", modelname)
 
 # 1 Load data

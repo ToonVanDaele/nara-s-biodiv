@@ -25,13 +25,13 @@ getprobs <- function(sp_n, scenario, projname, df_proj_in){
                       projname, "_", sp_n, "_ensemble_KAPPAbin.RData")
 
   proj.bin <- loadrdata(file.name)
-  bins <- as.vector(proj.bin) # Get the mean binary output of the ensemble
+  bins <- as.vector(proj.bin[, 1]) # Get the mean binary output of the ensemble
   remove(proj.bin)
 
   # bind utmID, 'probs' and 'binaries'
   idxy <- df_proj_in %>%
     filter(scen == scenario) %>%
-    select(utmID)
+    dplyr::select(utmID)
   df.temp <- cbind(idxy, projname, sp_n, probs, bins)
 
   return(df.temp)

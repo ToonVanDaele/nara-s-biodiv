@@ -11,15 +11,12 @@ projectbiomod <- function(modelname = "test"){
 
   library(biomod2)
   library(tidyverse)
-  library(RSQLite)
   source("11_NARA_S_Functions.R")
   source("12_NARA_S_Runbiomod.R")
 
   modeldir <- "../data/models"
 
-  cat("Start - ", date(), "\n",
-      "model directory: ", modeldir, "\n",
-      "Modelname: ", modelname, "\n")
+  cat("Start - ", date(), "\n", "Modelname: ", modelname, "\n")
 
   #---------------------------------------------------------------------------
   # Load data
@@ -28,14 +25,11 @@ projectbiomod <- function(modelname = "test"){
 
   df_proj_in <- readRDS(paste0(path, "df_proj_in.RDS"))
   explspec <- readRDS(paste0(path, "explspec.RDS"))
-
-  db <- dbConnect(SQLite(), dbname = paste0(path, "speclist.sqlite"))
-  speclist <- dbReadTable(db, "speclist")
-  dbDisconnect(db)
+  speclist <- readRDS(paste0(path, "speclist.RDS"))
 
   # List of projections to be made
   projs <- expand.grid(proj = unique(df_proj_in$scen),
-                       sp.n = speclist$species,
+                       sp.n = speclist,
                        modelname = modelname,
                        stringsAsFactors = FALSE)
 

@@ -4,14 +4,13 @@ author: "Toon Van Daele"
 date: "`r Sys.Date()`s"
 output: html_document
 params:
-  modelname: "kappa"
+  modelname: "rlw"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(pander)
-library(RSQLite)
 source("11_NARA_S_Functions.R")
 modelname <- params$modelname  #test
 path <- paste0("../data/data-out/", modelname, "/")
@@ -22,15 +21,13 @@ Path to data: `r path`
 
 ```{r loaddata}
 df_proj_in <- readRDS(paste0(path, "df_proj_in.RDS"))
-db <- dbConnect(SQLite(), dbname = paste0(path, "speclist.sqlite"))
-speclist <- dbReadTable(db, "speclist")
-dbDisconnect(db)
+speclist <- readRDS(paste0(path, "speclist.RDS"))
 ```
 
 ## Probabilities from biomod projections
 
 ```{r get probabilities}
-projs <- expand.grid(sp_n = speclist$species,
+projs <- expand.grid(sp_n = speclist,
                      scenario = unique(df_proj_in$scen),
                      stringsAsFactors = FALSE)
 projs$projname <- paste0(modelname, "_", projs$scen)
@@ -50,16 +47,13 @@ df_sums <- df_probs %>%
 
 df_idxy <- df_proj_in %>%
   filter(scen == "Current") %>%
-  select(utmID, X, Y)
+  dplyr::select(utmID, X, Y)
 
 df_sums <- left_join(df_sums, df_idxy, by = "utmID")
 
 sumplots <- df_sums %>%
   split(.$projname) %>%
   map(., plotsum, path)
-
-saveRDS(df_sums, file = paste0(path, "df_sums.RDS"))
-write.csv(df_sums, file = paste0(path, "df_sums.csv"))
 ```
 
 ## Individual plots for each species (Current scenario only)
@@ -69,6 +63,7 @@ mypath <- paste0(path, "proj_bin/")
 dir.create(mypath, showWarnings = FALSE)
 
 scens <- unique(df_probs$projname)
+scens <- scens[grepl("Current", x = scens)] # Comment this line to project all scenarios
 
 for (scen in scens){
   plots <- df_probs %>%
