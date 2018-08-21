@@ -7,7 +7,7 @@
 #             modelname = name of the model run
 #------------------------------------------------------------------------------
 
-procesbiomod <- function(modelname = "test") {
+procesbiomod <- function(modelname = "norm") {
 
   library(biomod2)
   library(tidyverse)

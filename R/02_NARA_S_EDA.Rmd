@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(usdm)
+library(RANN)
 library(tidyverse)
 library(pander)
 source("11_NARA_S_Functions.R")
@@ -119,7 +120,6 @@ Deze locaties zijn niet goed ruimtelijke gebalanceerd. Een selectie op basis
 van nearest neighbours met een grts bestand verminderd de sterke concentratie.
 
 ```{r balancedlocationsGRTS}
-library(RANN)
 grts <- readRDS("../data/grts_red.RDS")
 
 grts <- grts %>%
@@ -425,11 +425,10 @@ We onderscheiden verder twee groepen.
 * Variabelen die (bijna) niet wijzigen bij gewijzigd landgebruik ->
 textuurvariabelen (twee principale componenten), textveen en potnatzuur
 
-We gaan ervan ui dat de standplaatsvariabelen "potnattrofie" en "drainage"
-gebonden zijn aan het landgebruik. Voor drainage lijkt dit op het eerste
-zicht niet onmiddellijk het geval. We behouden drainage en beschouwen die
-constant over de verschillende scenarios. Potnattrofie
-wordt niet verder gebruikt in de analyse.
+We gaan ervan uit dat de standplaatsvariabelen "potnattrofie" en "drainage"
+gebonden zijn aan het landgebruik. Voor drainage lijkt dit niet het geval.
+We behouden daarom drainage en beschouwen die constant over de 
+verschillende scenarios. Potnattrofie wordt niet verder gebruikt in de analyse.
 
 ```{r trofieenlandgebruik}
 df_expl %>%
@@ -485,11 +484,24 @@ explspec %>%
 ```
 
 
-# Normalize explanatory variables
+# Standardisation of explanatory variables
 
-! expl var for new scenarios require the same scale parameters
+```{r standardisation}
+# Calculate scaling values based on the values for the current scenario
+expl_scale <- df_expl %>%
+  filter(scen == "Current" & !varname == "Opp_m2") %>%
+  group_by(varname) %>%
+  summarise(smean = mean(value),
+            ssd = sd(value))
 
-Geen normalisatie meer.
+# Apply the same standardisation for all scenarios
+df_expl <- df_expl %>%
+  left_join(expl_scale,
+            by = "varname") %>%
+  mutate(svalue = (value - smean) / ssd) %>%
+  dplyr::select(-smean, -ssd)
+
+```
 
 # Future scenarios - "kijkrichtingen"
 

@@ -42,7 +42,7 @@ df_plant_in <- df_plant %>%
 df_expl_in <- df_expl %>%
   select(-vargroup) %>%
   filter(scen == "Current" & !varname == "Opp_m2") %>%
-  spread(key = varname, value = value)
+  spread(key = varname, value = svalue)
 ```
 
 ## Join explanatory data & plant data
@@ -67,7 +67,7 @@ print(speclist$species)
 df_proj_in <- df_expl %>%
   select(-vargroup) %>%
   filter(!varname == "Opp_m2") %>%
-  spread(key = varname, value = value)
+  spread(key = varname, value = svalue)
 ```
 
 ## Save preprocessed data
