@@ -8,8 +8,6 @@
 #------------------------------------------------------------------------
 getprobs <- function(sp_n, scenario, projname, df_proj_in){
 
-  cat(sp_n, " - ", scenario, " - ", projname, "\n")
-
   # load ensemble mean probability projection
   file.name <- paste0("../data/models/", sp_n, "/proj_", projname, "/proj_",
                       projname, "_", sp_n, "_ensemble.RData")

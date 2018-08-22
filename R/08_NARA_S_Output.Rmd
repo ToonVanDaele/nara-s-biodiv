@@ -10,6 +10,8 @@ params:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(dbplyr)
+library(RSQLite)
 library(pander)
 modelname <- params$modelname #"allsp"
 path <- paste0("../data/data-out/", modelname, "/")
@@ -18,7 +20,8 @@ path <- paste0("../data/data-out/", modelname, "/")
 Generating output for NARA_S of model: **`r modelname`**
 
 ```{r loaddata}
-df_probs <- readRDS(paste0(path, "df_probs.RDS"))
+db <- dbConnect(SQLite(), dbname = paste0(path, "df_probs.sqlite"))
+df_probs <- tbl(db, "df_probs")
 speclist <- readRDS(paste0(path, "speclist.RDS"))
 ```
 
