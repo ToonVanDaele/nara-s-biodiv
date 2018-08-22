@@ -34,7 +34,10 @@ projs$projname <- paste0(modelname, "_", projs$scen)
 
 df_probs <- pmap_dfr(projs, getprobs, df_proj_in)
 
-saveRDS(df_probs, file = paste0(path, "df_probs.RDS"))
+db <- dbConnect(SQLite(), dbname = paste0(path, "df_probs.sqlite"))
+
+dbWriteTable(conn = db, name = "df_probs", df_probs,
+             row.names = FALSE, overwrite = TRUE)
 ```
 
 # Sum of probabilities and bins
