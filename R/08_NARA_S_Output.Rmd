@@ -93,7 +93,8 @@ join 'prev' and 'redlist' to probs
 ```{r jointoprobs}
 df_probs <- df_probs %>%
   left_join(df_prev,
-            by = "sp_n")
+            by = "sp_n",
+            copy = TRUE)
 ```
 
 Calculate sums per utmgrid and differences between scenarios
@@ -101,12 +102,13 @@ Calculate sums per utmgrid and differences between scenarios
 ```{r calcsums}
 df_sum <- df_probs %>%
   group_by(utmID, projname) %>%
-  summarise(probsum = sum(probs) / 1000,
-            binsum = sum(bins),
-            probsumw = sum(probs * ranksp) / 1000,
-            binsumw = sum(bins * ranksp),
-            binsumrl = sum(bins * ifelse(RLweging > 0, 1, 0)),
-            binsumrlw = sum(bins * RLweging))
+  summarise(probsum = sum(probs, na.rm = TRUE) / 1000,
+            binsum = sum(bins, na.rm = TRUE),
+            probsumw = sum(probs * ranksp, na.rm = TRUE) / 1000,
+            binsumw = sum(bins * ranksp, na.rm = TRUE),
+            binsumrl = sum(bins * ifelse(RLweging > 0, 1, 0), na.rm = TRUE),
+            binsumrlw = sum(bins * RLweging, na.rm = TRUE)) %>%
+  collect()
 saveRDS(df_sum, file = paste0(path, "df_sum.RDS"))
 ```
 

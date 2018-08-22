@@ -7,7 +7,9 @@ path <- paste0("../data/data-out/", modelname, "/")
 df_eval <- readRDS(file = paste0(path, "df_eval.RDS"))
 df_sum <- readRDS(file = paste0(path, "df_sum.RDS"))
 df_data_in <- readRDS(file = paste0(path, "df_data_in.RDS"))
-df_probs <- readRDS(file = paste0(path, "df_probs.RDS"))
+
+db <- dbConnect(SQLite(), dbname = paste0(path, "df_probs.sqlite"))
+df_probs <- tbl(db, "df_probs")
 
 head(df_probs)
 
@@ -67,7 +69,8 @@ df_plant_data <- left_join(x = df_plant_data,
 
 df_probbin <- df_probs %>%
   filter(projname == "rlw_Current" &
-           utmID %in% utmIDs)
+           utmID %in% utmIDs) %>%
+  collect()
 
 df_all <- inner_join(x = df_plant_data,
                      y = df_probbin,

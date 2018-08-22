@@ -17,14 +17,17 @@ path <- paste0("../data/data-out/", modelname, "/")
 df_eval <- readRDS(file = paste0(path, "df_eval.RDS"))
 df_sums_AUC <- readRDS(file = paste0(path, "df_sums_AUC.RDS"))
 df_data_in <- readRDS(file = paste0(path, "df_data_in.RDS"))
-df_probs <- readRDS(file = paste0(path, "df_probs.RDS"))
+
+db <- dbConnect(SQLite(), dbname = paste0(path, "df_probs.sqlite"))
+df_probs <- tbl(db, "df_probs")
 
 head(df_probs)
 
 temp <- df_probs %>%
   group_by(utmID, projname) %>%
-  summarise(bin = sum(bins),
-            prob = sum(probs) / 1000)
+  summarise(bin = sum(bins, na.rm = TRUE),
+            prob = sum(probs, na.rm = TRUE) / 1000) %>%
+  collect()
 
 summary(temp)
 

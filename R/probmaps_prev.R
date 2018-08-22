@@ -7,9 +7,11 @@ source("11_NARA_S_Functions.R")
 
 # load data
 df_data_in <- readRDS(file = paste0(path, "df_data_in.RDS"))
-df_probs <- readRDS(file = paste0(path, "df_probs.RDS"))
 df_proj_in <- readRDS(paste0(path, "df_proj_in.RDS"))
 df_redlist <- readRDS("../data/data-in/df_redlist.RDS")
+
+db <- dbConnect(SQLite(), dbname = paste0(path, "df_probs.sqlite"))
+df_probs <- tbl(db, "df_probs")
 
 # list of modelled species
 sp_n_all <- unique(df_probs$sp_n)
@@ -17,13 +19,13 @@ sp_n_all <- unique(df_probs$sp_n)
 # list of input species
 colnames(df_data_in)[23:658]
 
-
 # number of utmgrids with plant data
 nbutm <- length(unique(df_data_in$utmID))
 
 # probabilitie for Current scenario
-df_probsCur <- filter(df_probs, projname == "allsp_Current")
-remove(df_probs)
+df_probsCur <- df_probs %>%
+  filter(projname == "allsp_Current") %>%
+  collect()
 
 # Calculate prevalences
 df_rare <- df_data_in %>%
