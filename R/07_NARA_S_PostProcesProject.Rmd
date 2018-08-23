@@ -4,7 +4,7 @@ author: "Toon Van Daele"
 date: "`r Sys.Date()`s"
 output: html_document
 params:
-  modelname: "rlw"
+  modelname: "norm"
 ---
 
 ```{r setup, include=FALSE}
@@ -45,8 +45,8 @@ dbWriteTable(conn = db, name = "df_probs", df_probs,
 ```{r sum probabilities}
 df_sums <- df_probs %>%
   dplyr::group_by(utmID, projname) %>%
-  dplyr::summarise(probsum = sum(probs) / 1000,
-                   binsum  = sum(bins))
+  dplyr::summarise(probsum = sum(probs, na.rm = TRUE) / 1000,
+                   binsum  = sum(bins, na.rm = TRUE))
 
 df_idxy <- df_proj_in %>%
   filter(scen == "Current") %>%
