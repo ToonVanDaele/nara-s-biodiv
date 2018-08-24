@@ -1,8 +1,0 @@
-#
-# tryout betapart
-
-library(betapart)
-
-#
-#
-

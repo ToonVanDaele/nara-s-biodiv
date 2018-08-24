@@ -3,8 +3,7 @@
 #
 # Input: existing models created with biomod
 # Output: projections stored in the working directory: \cr
-# Parameters: modeldir = location of the modelresults (biomod)
-#             modelname = name of the model run
+# Parameters: modelname = name of the model run
 #------------------------------------------------------------------------------
 
 projectbiomod <- function(modelname = "test"){
