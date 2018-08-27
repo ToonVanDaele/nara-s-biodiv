@@ -41,10 +41,14 @@ df_plant2 <- df_plant %>%
 
 explspec <- readRDS(paste0(path, "explspec.RDS"))
 
-spec <- "acer.cam"
-
 df_plant3 <- df_plant2 %>%
   filter(Taxoncode == "acer.cam")
+
+
+speclist <- c("acer.cam", "calluvul", "alnusglu", "equisarv")
+
+df_plant4 <- df_plant2 %>%
+  filter(Taxoncode %in% speclist)
 
 explvar <- explspec %>%
       filter(sp_n == spec) %>%
@@ -56,8 +60,10 @@ rs_env <- raster::subset(rs, explvar)
 
 ## ----SDM-----------------------------------------------------------------
 
-SDM <- modelling('RF', df_plant3,
-                 rs_env, Xcol = 'X', Ycol = 'Y', verbose = TRUE)
+SDM <- modelling(algorithm = 'GLM',
+                 Occurrences = df_plant3, Xcol = 'X', Ycol = 'Y',
+                 Env = rs_env,
+                 verbose = TRUE)
 plot(SDM@projection, main = 'SDM - acer.cam - GAM algorithm')
 
 plot(SDM@binary, main = 'SDM - acer.cam - GAM algorithm')
@@ -65,18 +71,39 @@ plot(SDM@binary, main = 'SDM - acer.cam - GAM algorithm')
 SDM@evaluation
 SDM@variable.importance
 
-
 ## ----ESDM----------------------------------------------------------------
-ESDM <- ensemble_modelling(c('CTA', 'MARS'), subset(Occurrences, Occurrences$SPECIES == 'elliptica'),
-                           Env, rep = 1, Xcol = 'LONGITUDE', Ycol = 'LATITUDE',
-                          ensemble.thresh = c(0.6), verbose = FALSE)
-plot(ESDM@projection, main = 'ESDM\nfor Cryptocarya elliptica\nwith CTA and MARS algorithms')
+ESDM <- ensemble_modelling(algorithms = c('GLM', 'MARS'),
+                           Occurrences = df_plant3, Xcol = 'X', Ycol = 'Y',
+                           Env = rs_env, rep = 1,
+                           ensemble.thresh = 0.5,
+                           verbose = TRUE)
+
+plot(ESDM@projection, main = 'ESDM')
+
+ESDM@evaluation
+ESDM@variable.importance
 
 ## ----SSDM----------------------------------------------------------------
-SSDM <- stack_modelling(c('CTA', 'SVM'), Occurrences, Env, rep = 1,
-                       Xcol = 'LONGITUDE', Ycol = 'LATITUDE',
-                       Spcol = 'SPECIES', method = "pSSDM", verbose = FALSE)
-plot(SSDM@diversity.map, main = 'SSDM\nfor Cryptocarya genus\nwith CTA and SVM algorithms')
+SSDM <- stack_modelling(algorithms = c('GLM'),
+                        Occurrences = df_plant4, Xcol = 'X', Ycol = 'Y',
+                        Env = rs_env,
+                        rep = 1,
+                        Spcol = 'Taxoncode',
+                        method = "bSSDM",
+                        ensemble.thresh = c(0.5),
+                        verbose = TRUE)
+
+plot(SSDM@diversity.map, main = 'SSDM')
+
+plot(SSDM@uncertainty)
+
+SSDM@parameters
+
+SSDM@algorithm.evaluation
+
+SSDM@enms$acer.cam.Ensemble.SDM@evaluation
+
+SSDM@evaluation
 
 ## ----SDM evaluation------------------------------------------------------
 knitr::kable(ESDM@evaluation)
@@ -88,7 +115,7 @@ knitr::kable(SSDM@evaluation)
 knitr::kable(SSDM@variable.importance)
 
 ## ----SSDM endemism-------------------------------------------------------
-plot(SSDM@endemism.map, main = 'Endemism map\nfor Cryptocarya genus\nwith CTA and SVM algorithms')
+plot(SSDM@endemism.map, main = 'SSDM')
 
 ## ----plot----------------------------------------------------------------
 # plot(SSDM)
