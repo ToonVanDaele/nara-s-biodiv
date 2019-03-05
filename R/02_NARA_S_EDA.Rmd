@@ -90,9 +90,6 @@ temp <- df_redlist %>%
 
 speclist <- speclist[speclist %in% temp]
 
-# for testing 
-speclist <- sample(speclist, 200)
-
 ```
 
 A total of `r length(speclist)` species.

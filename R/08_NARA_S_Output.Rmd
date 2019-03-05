@@ -38,6 +38,9 @@ remove(df_meval)
 df_probs <- filter(df_probs, sp_n %in% sp_sel)
 ```
 
+Total number of species modelled with mean ROC > 0.7 =  `r length(sp_sel)`
+
+
 Get utm xy coordinates
 
 ```{r getxy}
@@ -247,4 +250,34 @@ write.table(df_binsumrlw, file = paste0(path, "df_binsumrlw.txt"),
 summary(df_binsumrlw[-c(1, 11, 12)])
 ```
 
+```{r rank_plot}
+sample_size <- 2000  
+
+make_rank_plot <- function(df, sample_size) {
+  p <- df %>%
+    as.tibble() %>%
+    dplyr::sample_n(sample_size) %>%
+    select(rlw_Current, rlw_kr1, rlw_kr2, rlw_kr3, rlw_kr4) %>%
+    gather(key = "scen", value = "aantal") %>%
+    group_by(scen) %>%
+    arrange(scen, aantal) %>%
+    mutate(percent = row_number() / sample_size * 100) %>%
+    ggplot(aes(x = percent, y = aantal, colour = scen)) + geom_path()
+}
+```
+Ranking sum of probabilities
+
+```{r cumul_probsum}
+p <- make_rank_plot(df_probsum, sample_size = sample_size)
+plot(p)
+ggsave(paste0(path, "probsum_rank.png"), p)
+```
+
+Ranking sum of binaries
+
+```{r}
+p <- make_rank_plot(df_binsum, sample_size = sample_size)
+plot(p)
+ggsave(paste0(path, "binsum_rank.png"), p)
+```
 
