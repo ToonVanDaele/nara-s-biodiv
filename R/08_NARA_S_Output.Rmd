@@ -251,12 +251,10 @@ summary(df_binsumrlw[-c(1, 11, 12)])
 ```
 
 ```{r rank_plot}
-sample_size <- 2000  
-
-make_rank_plot <- function(df, sample_size) {
+make_rank_plot <- function(df) {
   p <- df %>%
     as.tibble() %>%
-    dplyr::sample_n(sample_size) %>%
+    dplyr::sample_n(4000) %>%
     select(rlw_Current, rlw_kr1, rlw_kr2, rlw_kr3, rlw_kr4) %>%
     gather(key = "scen", value = "aantal") %>%
     group_by(scen) %>%
@@ -268,7 +266,7 @@ make_rank_plot <- function(df, sample_size) {
 Ranking sum of probabilities
 
 ```{r cumul_probsum}
-p <- make_rank_plot(df_probsum, sample_size = sample_size)
+p <- make_rank_plot(df_probsum)
 plot(p)
 ggsave(paste0(path, "probsum_rank.png"), p)
 ```
@@ -276,7 +274,7 @@ ggsave(paste0(path, "probsum_rank.png"), p)
 Ranking sum of binaries
 
 ```{r}
-p <- make_rank_plot(df_binsum, sample_size = sample_size)
+p <- make_rank_plot(df_binsum)
 plot(p)
 ggsave(paste0(path, "binsum_rank.png"), p)
 ```
