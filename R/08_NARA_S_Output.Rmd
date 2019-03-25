@@ -252,20 +252,24 @@ summary(df_binsumrlw[-c(1, 11, 12)])
 
 ```{r rank_plot}
 make_rank_plot <- function(df) {
+  sample_size <- 4000
   p <- df %>%
     as.tibble() %>%
-    dplyr::sample_n(4000) %>%
-    select(rlw_Current, rlw_kr1, rlw_kr2, rlw_kr3, rlw_kr4) %>%
-    gather(key = "scen", value = "aantal") %>%
-    group_by(scen) %>%
-    arrange(scen, aantal) %>%
+    dplyr::sample_n(sample_size) %>%
+    select(Actueel = rlw_Current, CI = rlw_kr1, NW = rlw_kr2, SE = rlw_kr3, SN = rlw_kr4) %>%
+    gather(key = "scenario", value = "aantal") %>%
+    group_by(scenario) %>%
+    arrange(scenario, aantal) %>%
     mutate(percent = row_number() / sample_size * 100) %>%
-    ggplot(aes(x = percent, y = aantal, colour = scen)) + geom_path()
+    ggplot(aes(x = percent, y = aantal, colour = scenario)) + geom_path() +
+    scale_colour_manual(values = c("black", "green2", "orange", "deeppink2", "blue"))
 }
 ```
 Ranking sum of probabilities
 
 ```{r cumul_probsum}
+p <- 
+
 p <- make_rank_plot(df_probsum)
 plot(p)
 ggsave(paste0(path, "probsum_rank.png"), p)
